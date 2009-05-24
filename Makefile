@@ -3,9 +3,9 @@ CXXFLAGS=-Wall
 
 all: multicron
 
-OBJECTS=cnproc.o ezxml.o xml.o main.o inotify.o
+OBJECTS=cnproc.o ezxml.o xml.o main.o inotify.o cnproc_base.o
 multicron: $(OBJECTS)
-	g++ $(OBJECTS) -o multicron -Wall
+	g++ $(OBJECTS) -o multicron -Wall -lpcreposix
 
 clean:
 	rm -f multicron $(OBJECTS)

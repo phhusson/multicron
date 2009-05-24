@@ -8,5 +8,6 @@
 		<ionice class="idle"/>
 		<nice class="classic" priority="19"/>
 	</event>
-	<event type="date" day="*" hour="19" min="55">mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</event>
+	<event type="date" day="*" hour="19" min="55"><cmd>mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</cmd></event>
+	<event type="inotify" file="prout.xml"><reload/></event>
 </root>

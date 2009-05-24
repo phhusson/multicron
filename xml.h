@@ -5,7 +5,9 @@ extern "C" {
 class xmlAttribute {
 	friend class xmlNode;
 	public:
+#ifdef WRITE_XML
 		char *operator=(char*);
+#endif
 		const char *operator()();
 	private:
 		xmlAttribute(ezxml_t, const char*);
@@ -21,7 +23,9 @@ class xmlNode {
 
 		xmlNode operator()(const char *);
 		xmlAttribute operator[](const char*);
+#ifdef WRITE_XML
 		const char *operator=(const char*);
+#endif
 		const char *operator()();
 		bool operator!();
 

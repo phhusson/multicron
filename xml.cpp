@@ -3,10 +3,12 @@
 #include <iostream>
 #include <string.h>
 
+#ifdef WRITE_XML
 char *xmlAttribute::operator=(char *val) {
 	ezxml_set_attr(node, strdup(attr_name), val);
 	return val;
 }
+#endif
 
 const char *xmlAttribute::operator()() {
 	return ezxml_attr(node, attr_name);
@@ -48,10 +50,12 @@ xmlAttribute xmlNode::operator[](const char *name) {
 	return xmlAttribute(node, name);
 }
 
+#ifdef WRITE_XML
 const char *xmlNode::operator=(const char *val) {
 	ezxml_set_txt(node, val);
 	return val;
 }
+#endif
 
 const char *xmlNode::operator()() {
 	return ezxml_txt(node);
@@ -61,11 +65,11 @@ xmlNode xmlNode::operator[](int arg) {
 	ezxml_t tmp=node;
 	while( (arg--)>0 ) {
 		if(tmp==NULL)
-			return NULL;
+			return xmlNode((ezxml_t)NULL);
 		tmp=tmp->next;
 	}
 	if(tmp==NULL)
-		return NULL;
+		return xmlNode((ezxml_t)NULL);
 	return xmlNode(tmp);
 }
 
@@ -80,7 +84,8 @@ bool xmlNode::operator!() {
 	return true;
 }
 
-int main() {
+#if 0
+int main(int argc, char **argv) {
 	xmlNode t("prout.xml");
 	xmlNode a=t("branch");
 	while(!!a) {
@@ -88,3 +93,4 @@ int main() {
 		++a;
 	}
 }
+#endif

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <root>
-	<exec match="mplayer">
+	<exec match="mplayer .*" file="!/usr/bin/mplayer">
 		<ionice  class="realtime" priority="42"/>
 		<cpunice class="realtime" priority="42"/>
 	</exec>

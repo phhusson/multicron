@@ -8,13 +8,15 @@
 #include "commands.h"
 
 struct event_manager *inotify_module();
+struct event_manager *cnproc_module();
 
 int main(int argc, char **argv) {
 	try {
 		xmlNode root("prout.xml");
 		initCmds();
-		struct event_manager *ev=inotify_module();
-		ev->refresh_config(root(ev->name));
+		//struct event_manager *ev=inotify_module();
+		//ev->refresh_config(root(ev->name));
+		struct event_manager *ev=cnproc_module();
 		while(1) {
 			ev->callback(root(ev->name));
 		}

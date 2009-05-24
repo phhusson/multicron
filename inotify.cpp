@@ -15,7 +15,7 @@ struct event_manager *inotify_module() {
 	static struct event_manager *ret=NULL;
 	if(ret!=NULL)
 		return ret;
-	ret=new event_manager;//malloc(sizeof(struct event_manager));
+	ret=new event_manager;
 
 	ret->fd=inotify_init();
 	ret->callback=inotify_cb;

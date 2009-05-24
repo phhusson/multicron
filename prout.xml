@@ -1,7 +1,12 @@
 <?xml version="1.0"?>
 <root>
-	<branch arg="plouf"/>
-	<branch arg="pan">
-		haha
-	</branch>
+	<event type="exec" match="mplayer">
+		<ionice  class="realtime" priority="42"/>
+		<cpunice class="realtime" priority="42"/>
+	</event>
+	<event type="exec" match="updatedb">
+		<ionice class="idle"/>
+		<nice class="classic" priority="19"/>
+	</event>
+	<event type="date" day="*" hour="19" min="55">mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</event>
 </root>

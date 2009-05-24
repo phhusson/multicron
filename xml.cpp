@@ -41,8 +41,6 @@ xmlNode::xmlNode(int fd) {
 
 xmlNode xmlNode::operator()(const char* name) {
 	ezxml_t tree=ezxml_child(node, name);
-	if(!tree)
-		throw std::string("Node '")+name+"' not found"; 
 	return xmlNode(tree);
 }
 
@@ -82,6 +80,12 @@ bool xmlNode::operator!() {
 	if(node && node->name)
 		return false;
 	return true;
+}
+
+bool xmlNode::operator!=(const char *arg) {
+	if(node && node->name && strcmp(node->name, arg)==0)
+		return true;
+	return false;
 }
 
 #if 0

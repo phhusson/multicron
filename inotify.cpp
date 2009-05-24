@@ -6,6 +6,7 @@ extern "C" {
 #include <sys/inotify.h>
 #include <string.h>
 };
+#include "commands.h"
 
 static void inotify_cb(xmlNode config);
 static void inotify_conf(xmlNode config);
@@ -82,45 +83,43 @@ static void inotify_cb(xmlNode config) {
 			printf("%s was modified\n", path);
 		}
 
-		switch(event->mask) {
-			default:
-				break;
-			case IN_CREATE:
-			case IN_MOVED_TO:
-			case IN_CLOSE_WRITE:
-				xmlNode node(config);
-				while(!!node) {
-					char *folder=strdup(node["folder"]());
-					if(folder[strlen(folder)-1]=='/')
-						folder[strlen(folder)-1]=0;
-					if(strcmp(folder, inotify_files[event->wd])==0) {
-						regex_t preg;
-						if(node["match"]()) {
-							int ret=regcomp(&preg, node["match"](), REG_UTF8);
-							regmatch_t match;
-							if(ret!=0) {
-								char *errbuf=(char*)malloc(512);
-								memset(errbuf,0,512);
-								regerror(ret, &preg, errbuf, 512);
-								throw std::string("Pattern won't compile :")+errbuf;
-							}
-							ret=regexec(&preg, name, 1, &match, 0);
-							if(ret==0 && match.rm_so==0 && match.rm_eo==strlen(name)) {
-								printf("%s matched !!!\n", path);
-							} 
-						} else if(node["file"]()) {
-							if(strcmp(node["file"](), name)) {
-								printf("%s matched!!!\n", path);
-							}
-						}
-
-					}
-					++node;
-				}
-				break;
-		}
-
-
+		if(event->mask!=IN_CREATE && event->mask!=IN_MOVED_TO && event->mask!=IN_CLOSE_WRITE)
+			continue;
 		i += sizeof (struct inotify_event) + event->len;
+
+		xmlNode node(config);
+		while(!!node) {
+			char *folder=strdup(node["folder"]());
+			if(folder[strlen(folder)-1]=='/')
+				folder[strlen(folder)-1]=0;
+			struct context ctx;
+			memset(&ctx, 0, sizeof(ctx));
+			ctx.pid=0;
+			ctx.file=path;
+			if(strcmp(folder, inotify_files[event->wd])==0) {
+				regex_t preg;
+				if(node["match"]()) {
+					int ret=regcomp(&preg, node["match"](), REG_UTF8);
+					regmatch_t match;
+					if(ret!=0) {
+						char *errbuf=(char*)malloc(512);
+						memset(errbuf,0,512);
+						regerror(ret, &preg, errbuf, 512);
+						throw std::string("Pattern won't compile :")+errbuf;
+					}
+					ret=regexec(&preg, name, 1, &match, 0);
+					if(ret==0 && match.rm_so==0 && match.rm_eo==strlen(name)) {
+						printf("%s matched !!!\n", path);
+						cmdCall(node, ctx);
+					} 
+				} else if(node["file"]()) {
+					if(strcmp(node["file"](), name)) {
+						printf("%s matched!!!\n", path);
+					}
+				}
+
+			}
+			++node;
+		}
 	}
 }

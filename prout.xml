@@ -6,10 +6,13 @@
 	</exec>
 	<exec match="updatedb">
 		<ionice class="idle"/>
-		<nice class="classic" priority="19"/>
+		<cpunice class="classic" priority="19"/>
 	</exec>
 	<date hour="19" min="55"><cmd>mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</cmd></date>
 	<!-- event type not supported ATM, for now, it is triggered by IN_CLOSE_WRITE|IN_MOVED_TO|IN_CREATE -->
-	<inotify folder="/home/phh/" match="prout.*"><kill/></inotify>
+	<!-- match goes through pcre, you can use file for exact matching for complex filenames-->
+	<inotify folder="/home/phh/" match="prout">
+		<kill pid="42"/>
+	</inotify>
 	<!--<kill pid="XX" signal="YY"/> no pid -> self or inherited; no signal -> SIGUSR1-->
 </root>

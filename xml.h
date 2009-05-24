@@ -24,10 +24,11 @@ class xmlNode {
 		xmlNode operator()(const char *);
 		xmlAttribute operator[](const char*);
 #ifdef WRITE_XML
-		const char *operator=(const char*);
+		char *operator=(const char*);
 #endif
 		const char *operator()();
 		bool operator!();
+		bool operator!=(const char *arg);
 
 		xmlNode operator[](int);
 		xmlNode operator++();

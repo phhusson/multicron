@@ -5,12 +5,14 @@
 #include <string>
 #include <pcreposix.h>
 #include "multicron.h"
+#include "commands.h"
 
 struct event_manager *inotify_module();
 
 int main(int argc, char **argv) {
 	try {
 		xmlNode root("prout.xml");
+		initCmds();
 		struct event_manager *ev=inotify_module();
 		ev->refresh_config(root(ev->name));
 		while(1) {

@@ -114,6 +114,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 
 	readlink(fname2, file, 1024);
 	
+	/*
 	switch(ev->what){
 	case PROC_EVENT_FORK:
 		printf("FORK:parent(pid,tgid)=%d,%d\tchild(pid,tgid)=%d,%d\t[%s]\n",
@@ -135,7 +136,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 		break;
 	default:
 		break;
-	}
+	}*/
 	if(ev->what!=PROC_EVENT_EXEC)
 		return;
 	
@@ -241,34 +242,35 @@ int cnprocInit() {
 	return sk_nl;
 }
 
-void cnproc_cb(xmlNode config) {
+void cnproc_cb(xmlNode config, int fd, ETYPE event_type) {
+	(void)fd;
+	(void)event_type;
+
 	char buff[BUFF_SIZE];
 	int sk_nl=cnprocInit();
 	socklen_t from_nla_len;
-	struct sockaddr_nl /*my_nla, */kern_nla, from_nla;
+	struct sockaddr_nl kern_nla, from_nla;
 	size_t recv_len = 0;
 	struct cn_msg *cn_hdr;
 
-	for(memset(buff, 0, sizeof(buff)), from_nla_len = sizeof(from_nla);
-	  ; memset(buff, 0, sizeof(buff)), from_nla_len = sizeof(from_nla)) {
-		struct nlmsghdr *nlh = (struct nlmsghdr*)buff;
-		memcpy(&from_nla, &kern_nla, sizeof(from_nla));
-		recv_len = recvfrom(sk_nl, buff, BUFF_SIZE, 0,
-				(struct sockaddr*)&from_nla, &from_nla_len);
-		if (recv_len < 1)
+	memset(buff, 0, sizeof(buff)), from_nla_len = sizeof(from_nla);
+	struct nlmsghdr *nlh = (struct nlmsghdr*)buff;
+	memcpy(&from_nla, &kern_nla, sizeof(from_nla));
+	recv_len = recvfrom(sk_nl, buff, BUFF_SIZE, 0,
+			(struct sockaddr*)&from_nla, &from_nla_len);
+	if (recv_len < 1)
+		return;
+	while (NLMSG_OK(nlh, recv_len)) {
+		cn_hdr = (struct cn_msg*)NLMSG_DATA(nlh);
+		if (nlh->nlmsg_type == NLMSG_NOOP)
 			continue;
-		while (NLMSG_OK(nlh, recv_len)) {
-			cn_hdr = (struct cn_msg*)NLMSG_DATA(nlh);
-			if (nlh->nlmsg_type == NLMSG_NOOP)
-				continue;
-			if ((nlh->nlmsg_type == NLMSG_ERROR) ||
-			    (nlh->nlmsg_type == NLMSG_OVERRUN))
-				break;
-			handle_msg(cn_hdr, config);
-			if (nlh->nlmsg_type == NLMSG_DONE)
-				break;
-			nlh = NLMSG_NEXT(nlh, recv_len);
-		}
+		if ((nlh->nlmsg_type == NLMSG_ERROR) ||
+		    (nlh->nlmsg_type == NLMSG_OVERRUN))
+			break;
+		handle_msg(cn_hdr, config);
+		if (nlh->nlmsg_type == NLMSG_DONE)
+			break;
+		nlh = NLMSG_NEXT(nlh, recv_len);
 	}
 }
 
@@ -277,9 +279,14 @@ struct event_manager *cnproc_module() {
 	if(ret!=NULL)
 		return ret;
 	ret=new event_manager;
-	ret->fd=cnprocInit();
+	ret->rfds=(int*)malloc(sizeof(int)*2);
+	ret->rfds[0]=cnprocInit();
+	ret->rfds[1]=-1;
+	ret->wfds=NULL;
+	ret->efds=NULL;
+
 	ret->callback=cnproc_cb;
-	ret->name=strdup("exec");
+	ret->name=strdup("cnpoc");
 	ret->refresh_config=NULL;
 	return ret;
 }

@@ -8,7 +8,7 @@ extern "C" {
 };
 #include "commands.h"
 
-static void inotify_cb(xmlNode config);
+static void inotify_cb(xmlNode config, int fd, ETYPE event_type);
 static void inotify_conf(xmlNode config);
 static char **inotify_files;
 struct event_manager *inotify_module() {
@@ -17,7 +17,12 @@ struct event_manager *inotify_module() {
 		return ret;
 	ret=new event_manager;
 
-	ret->fd=inotify_init();
+	ret->rfds=(int*)malloc(sizeof(int)*2);
+	ret->rfds[0]=inotify_init();
+	ret->rfds[1]=-1;
+	ret->wfds=NULL;
+	ret->efds=NULL;
+
 	ret->callback=inotify_cb;
 	ret->name=strdup("inotify");
 	ret->refresh_config=inotify_conf;
@@ -28,7 +33,7 @@ struct event_manager *inotify_module() {
 }
 
 static void inotify_conf(xmlNode config) {
-	int inotify=inotify_module()->fd;
+	int inotify=inotify_module()->rfds[0];
 	while(!!config) {
 		char *file=strdup(config["folder"]());
 		if( file[strlen(file)-1]=='/')
@@ -53,12 +58,12 @@ static void inotify_conf(xmlNode config) {
 	}
 }
 
-static void inotify_cb(xmlNode config) {
+static void inotify_cb(xmlNode config, int fd, ETYPE event_type) {
 	char buffer[4096];
 	int ret;
 	int i=0;
 	//Now read the device by big blocks
-	ret=read(inotify_module()->fd, buffer, 4096);
+	ret=read(inotify_module()->rfds[0], buffer, 4096);
 	if(ret<0)
 		perror("read");
 	if(ret==0)
@@ -72,6 +77,7 @@ static void inotify_cb(xmlNode config) {
 		char *path;
 		asprintf(&path, "%s/%s", inotify_files[event->wd],name);
 		//Translate the inotify_event structure into a human comprehensible display
+		/*
 		if(event->mask==IN_MOVED_FROM || event->mask==IN_DELETE) {
 			printf("%s was deleted\n", path);
 		}
@@ -81,11 +87,11 @@ static void inotify_cb(xmlNode config) {
 			printf("%s was deleted\n", inotify_files[event->wd]);
 		} else if(event->mask==IN_CLOSE_WRITE) {
 			printf("%s was modified\n", path);
-		}
+		}*/
 
+		i += sizeof (struct inotify_event) + event->len;
 		if(event->mask!=IN_CREATE && event->mask!=IN_MOVED_TO && event->mask!=IN_CLOSE_WRITE)
 			continue;
-		i += sizeof (struct inotify_event) + event->len;
 
 		xmlNode node(config);
 		while(!!node) {

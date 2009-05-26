@@ -102,6 +102,11 @@ void killCall(xmlNode arg, context_t context) {
 	}
 }
 
+void cmdCall(xmlNode arg, context_t context) {
+	if(arg())
+		system(arg());
+}
+
 void initCmds() {
 	cmds=(struct cmd*)malloc(sizeof(*cmds)*10);
 	memset(cmds, 0, sizeof(*cmds)*10);
@@ -111,5 +116,7 @@ void initCmds() {
 	cmds[1].callback=cpuniceCall;
 	cmds[2].name=strdup("kill");
 	cmds[2].callback=killCall;
+	cmds[2].name=strdup("cmd");
+	cmds[2].callback=cmdCall;
 }
 

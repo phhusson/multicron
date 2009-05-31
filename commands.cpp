@@ -102,7 +102,7 @@ void killCall(xmlNode arg, context_t context) {
 	}
 }
 
-void cmdCall(xmlNode arg, context_t context) {
+void cmdCll(xmlNode arg, context_t context) {
 	if(arg())
 		system(arg());
 }
@@ -117,6 +117,6 @@ void initCmds() {
 	cmds[2].name=strdup("kill");
 	cmds[2].callback=killCall;
 	cmds[2].name=strdup("cmd");
-	cmds[2].callback=cmdCall;
+	cmds[2].callback=cmdCll;
 }
 

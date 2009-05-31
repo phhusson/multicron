@@ -1,6 +1,7 @@
 #include <iostream>
 #include "xml.h"
 #include "multicron.h"
+#include "inotify.h"
 #include <pcreposix.h>
 extern "C" {
 #include <sys/inotify.h>
@@ -8,10 +9,9 @@ extern "C" {
 };
 #include "commands.h"
 
-static void inotify_cb(xmlNode config, int fd, ETYPE event_type);
-static void inotify_conf(xmlNode config);
-static char **inotify_files;
-struct event_manager *inotify_module() {
+//struct event_manager *inotify_module() {
+InotifyEvent::InotifyEvent() {
+	/*
 	static struct event_manager *ret=NULL;
 	if(ret!=NULL)
 		return ret;
@@ -26,14 +26,30 @@ struct event_manager *inotify_module() {
 	ret->callback=inotify_cb;
 	ret->name=strdup("inotify");
 	ret->refresh_config=inotify_conf;
+	ret->next_timeout=NULL;
 	inotify_files=(char**)malloc(sizeof(char*)*5);
 	memset(inotify_files, 0, sizeof(char*)*5);
+	*/
 
-	return ret;
+
+	rfds=(int*)malloc(sizeof(int)*2);
+	rfds[0]=inotify_init();
+	if( rfds[0] < 0 )
+		throw "Couldn't create inotify fd";
+	rfds[1]=-1;
+	wfds=NULL;
+	efds=NULL;
+
+	//callback=inotify_cb;
+	name=strdup("inotify");
+	//refresh_config=inotify_conf;
+	inotify_files=(char**)malloc(sizeof(char*)*5);
+	memset(inotify_files, 0, sizeof(char*)*5);
+	
 }
 
-static void inotify_conf(xmlNode config) {
-	int inotify=inotify_module()->rfds[0];
+void InotifyEvent::RefreshConfig(xmlNode config) {
+	int inotify=this->rfds[0];
 	while(!!config) {
 		char *file=strdup(config["folder"]());
 		if( file[strlen(file)-1]=='/')
@@ -58,12 +74,14 @@ static void inotify_conf(xmlNode config) {
 	}
 }
 
-static void inotify_cb(xmlNode config, int fd, ETYPE event_type) {
+void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+	if(event_type==EventManager::TIMEOUT)
+		return;
 	char buffer[4096];
 	int ret;
 	int i=0;
 	//Now read the device by big blocks
-	ret=read(inotify_module()->rfds[0], buffer, 4096);
+	ret=read(this->rfds[0], buffer, 4096);
 	if(ret<0)
 		perror("read");
 	if(ret==0)

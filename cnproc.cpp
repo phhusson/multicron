@@ -49,6 +49,7 @@
 #include "xml.h"
 #include "multicron.h"
 #include "commands.h"
+#include "cnproc.h"
 
 #define SEND_MESSAGE_LEN (NLMSG_LENGTH(sizeof(struct cn_msg) + \
 				       sizeof(enum proc_cn_mcast_op)))
@@ -148,7 +149,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 				++node;
 				continue;
 			}
-		 const char *match_cmd=node["match"]();
+		 const char *match_cmd=node["cmdline"]();
 		 if(!match_cmd && !afile)
 			 throw std::string("Wait... you want to match every processes ? I prefer saying no.");
 		 if(match_cmd)
@@ -242,7 +243,9 @@ int cnprocInit() {
 	return sk_nl;
 }
 
-void cnproc_cb(xmlNode config, int fd, ETYPE event_type) {
+void CNProcEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+	if(event_type==EventManager::TIMEOUT)
+		return;
 	(void)fd;
 	(void)event_type;
 
@@ -274,19 +277,12 @@ void cnproc_cb(xmlNode config, int fd, ETYPE event_type) {
 	}
 }
 
-struct event_manager *cnproc_module() {
-	static struct event_manager *ret=NULL;
-	if(ret!=NULL)
-		return ret;
-	ret=new event_manager;
-	ret->rfds=(int*)malloc(sizeof(int)*2);
-	ret->rfds[0]=cnprocInit();
-	ret->rfds[1]=-1;
-	ret->wfds=NULL;
-	ret->efds=NULL;
+CNProcEvent::CNProcEvent() {
+	rfds=(int*)malloc(sizeof(int)*2);
+	rfds[0]=cnprocInit();
+	rfds[1]=-1;
+	wfds=NULL;
+	efds=NULL;
 
-	ret->callback=cnproc_cb;
-	ret->name=strdup("cnpoc");
-	ret->refresh_config=NULL;
-	return ret;
+	name=strdup("cnproc");
 }

@@ -1,14 +1,21 @@
-enum ETYPE {
-	READ,
-	WRITE,
-	EXCEPTION
-};
+class EventManager {
 
-struct event_manager {
-	int *rfds,*wfds,*efds;
-	void (*callback)(xmlNode config, int fd, ETYPE event_type);
-	void (*refresh_config)(xmlNode config);
-	const char *name;//NULL terminated string list
+	public:
+		enum ETYPE {
+			READ,
+			WRITE,
+			EXCEPTION,
+			TIMEOUT
+		};
+
+		int *rfds,*wfds,*efds;
+		virtual void Callback(xmlNode config, int fd, ETYPE event_type);
+		virtual void RefreshConfig(xmlNode config);
+		virtual struct timeval NextTimeout(xmlNode config);
+		virtual void AddFDs(fd_set &fds, ETYPE event_type, int &max) const;
+		const char *name;//NULL terminated string list
+	
+
 };
 
 int regexp_match(const char *regexp, const char *val);

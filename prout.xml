@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <root>
-	<cnproc type="exec" cmdline="mplayer .*" file="!/usr/bin/mplayer">
+	<cnproc type="exec" cmdline="mplayer .*" file="/usr/bin/mpla.*">
 		<ionice  class="realtime" priority="42"/>
 	</cnproc>
 	<cnproc type="exec" cmdline="updatedb">
 		<ionice class="idle"/>
 	</cnproc>
 	<!--<date hour="19" min="55"><cmd>mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</cmd></date>-->
-	<date sec="40"><cmd>date</cmd></date>
+	<date min="22" sec="00"><cmd>date</cmd></date>
 	<!-- event type not supported ATM, for now, it is triggered by IN_CLOSE_WRITE|IN_MOVED_TO|IN_CREATE -->
 	<!-- match goes through pcre, you can use file for exact matching for complex filenames-->
 	<inotify folder="/home/phh/multicron" file="!prout.xml">

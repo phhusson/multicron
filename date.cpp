@@ -18,7 +18,10 @@ DateEvent::~DateEvent() {
 	int i;
 	for(i=0;tasks[i];++i)
 		delete tasks[i];
-	delete tasks;
+	free(tasks);
+	tasks=NULL;
+	if(name)
+		free(name);
 }
 
 void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
@@ -39,7 +42,7 @@ void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
 #endif
 		if(tasks[i]->when<=now) {
 			xmlNode cur=tasks[i]->task;
-			cmdCall(cur, ctx);
+			Cmds::Call(cur, ctx);
 			delete tasks[i];
 			tasks[i]=new DateTask(cur);
 		}
@@ -51,7 +54,7 @@ void DateEvent::RefreshConfig(xmlNode config) {
 		int i;
 		for(i=0;tasks[i];++i)
 			delete tasks[i];
-		delete tasks;
+		free(tasks);
 	}
 	tasks=NULL;
 	int n=0;
@@ -180,6 +183,8 @@ struct tm *Time::toTm() {
 	return localtime(&t);
 }
 
+#ifdef DEBUG
 void Time::Display() {
 	printf("HH:MM:SS=%02d:%02d:%02d\n", (t%86400)/3600, (t%3600)/60, t%60);
 }
+#endif

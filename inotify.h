@@ -1,3 +1,8 @@
+typedef struct {
+	char *filename;
+	int wd;
+} inotify_file;
+
 class InotifyEvent : public EventManager {
 	public:
 		InotifyEvent();
@@ -5,6 +10,7 @@ class InotifyEvent : public EventManager {
 		void RefreshConfig(xmlNode config);
 		~InotifyEvent();
 	private:
-		char **inotify_files;
+		inotify_file *inotify_files;
+		int n;
 };
 

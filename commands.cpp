@@ -22,6 +22,8 @@ enum {
 	IOPRIO_WHO_USER,
 };
 
+struct cmd *Cmds::cmds=NULL;
+
 #define IOPRIO_BITS             (16)
 #define IOPRIO_CLASS_SHIFT      (13)
 #define IOPRIO_PRIO_MASK        ((1UL << IOPRIO_CLASS_SHIFT) - 1)
@@ -30,14 +32,12 @@ enum {
 #define IOPRIO_PRIO_DATA(mask)  ((mask) & IOPRIO_PRIO_MASK)
 #define IOPRIO_PRIO_VALUE(clas, data)  (((clas) << IOPRIO_CLASS_SHIFT) | data)
 
-struct cmd *cmds;
-
 void fill_context(context_t &ctx) {
 	if(ctx.pid==0)
 		ctx.pid=getpid();
 }
 
-void cmdCall(xmlNode arg, context_t context) {
+void Cmds::Call(xmlNode arg, context_t context) {
 	fill_context(context);
 	int i=0;
 	while(cmds[i].name!=NULL) {
@@ -99,7 +99,7 @@ void killCall(xmlNode arg, const context_t& context) {
 	}
 }
 
-void cmdCll(xmlNode arg, const context_t& context) {
+void cmdCall(xmlNode arg, const context_t& context) {
 	if(arg()) {
 		int pid=fork();
 		if(pid>0)
@@ -122,7 +122,13 @@ void reloadCall(xmlNode arg, const context_t &ctx) {
 	reload=true;
 }
 
-void initCmds() {
+void Cmds::Update() {
+	if(cmds) {
+		int i;
+		for(i=0;cmds[i].name;i++)
+			free(cmds[i].name);
+		free(cmds);
+	}
 	cmds=(struct cmd*)malloc(sizeof(*cmds)*10);
 	memset(cmds, 0, sizeof(*cmds)*10);
 	cmds[0].name=strdup("ionice");
@@ -132,7 +138,8 @@ void initCmds() {
 	cmds[2].name=strdup("kill");
 	cmds[2].callback=killCall;
 	cmds[3].name=strdup("cmd");
-	cmds[3].callback=cmdCll;
+	cmds[3].callback=cmdCall;
 	cmds[4].name=strdup("reload");
 	cmds[4].callback=reloadCall;
 }
+

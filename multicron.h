@@ -13,9 +13,8 @@ class EventManager {
 		virtual void RefreshConfig(xmlNode config);
 		virtual struct timeval NextTimeout(xmlNode config);
 		virtual void AddFDs(fd_set &fds, ETYPE event_type, int &max) const;
-		const char *name;//NULL terminated string list
-	
-
+		char *name;
+		virtual ~EventManager();
 };
 
 bool regexp_match(const char *regexp, const char *val);

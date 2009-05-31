@@ -171,7 +171,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 		struct context ctx;
 		ctx.pid=ev->event_data.exec.process_pid;
 		ctx.file=NULL;
-		cmdCall(node, ctx);
+		Cmds::Call(node, ctx);
 		++node;
 	}
 }
@@ -295,4 +295,12 @@ CNProcEvent::CNProcEvent() {
 	efds=NULL;
 
 	name=strdup("cnproc");
+}
+
+CNProcEvent::~CNProcEvent() {
+	if(rfds) {
+		free(rfds);
+	}
+	if(name)
+		free(name);
 }

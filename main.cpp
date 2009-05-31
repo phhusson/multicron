@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
 				printf("Let's reload folks!\n");
 				reload=false;
 				root.Free();
+				Cmds::Update();
 				while(1) {
 					try {
 						root=xmlNode("prout.xml");
@@ -34,7 +35,6 @@ int main(int argc, char **argv) {
 						sleep(1);
 					}
 				}
-				initCmds();
 				if(evs) {
 					for(i=0;evs[i];++i)
 						delete evs[i];
@@ -155,4 +155,7 @@ void EventManager::AddFDs(fd_set &fds, ETYPE event_type, int &max) const {
 		FD_SET(tfds[j], &fds);
 	}
 
+}
+
+EventManager::~EventManager() {
 }

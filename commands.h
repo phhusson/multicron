@@ -11,4 +11,10 @@ struct cmd {
 };
 
 void initCmds();
-void cmdCall(xmlNode, context_t);
+class Cmds {
+	public:
+		static void Call(xmlNode, context_t);
+		static void Update();
+	private:
+		static struct cmd *cmds;
+};

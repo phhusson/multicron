@@ -12,21 +12,44 @@
 struct event_manager *inotify_module();
 struct event_manager *cnproc_module();
 
+bool reload;
+
 int main(int argc, char **argv) {
 	int i,j,max;
+	reload=true;
+	xmlNode root("prout.xml");
+	EventManager **evs=NULL;
 	try {
-		xmlNode root("prout.xml");
-		initCmds();
-		EventManager **evs=(EventManager**)malloc(4*sizeof(EventManager*));
-		evs[0]=new InotifyEvent;
-		evs[1]=new CNProcEvent;
-		evs[2]=new DateEvent;
-		evs[3]=NULL;
-		
-		for(i=0;evs[i];++i)
-			evs[i]->RefreshConfig(root(evs[i]->name));
-		
 		while(1) {
+			if(reload) {
+				printf("Let's reload folks!\n");
+				reload=false;
+				root.Free();
+				while(1) {
+					try {
+						root=xmlNode("prout.xml");
+						break;
+					} catch(...) {
+						//Let vim/whatever enough time to write the file
+						sleep(1);
+					}
+				}
+				initCmds();
+				if(evs) {
+					for(i=0;evs[i];++i)
+						delete evs[i];
+					free(evs);
+				}
+				evs=(EventManager**)malloc(4*sizeof(EventManager*));
+				evs[0]=new InotifyEvent;
+				evs[1]=new CNProcEvent;
+				evs[2]=new DateEvent;
+				evs[3]=NULL;
+				
+				for(i=0;evs[i];++i)
+					evs[i]->RefreshConfig(root(evs[i]->name));
+			}
+		
 			fd_set rfds,wfds,efds;
 			FD_ZERO(&rfds);
 			FD_ZERO(&wfds);
@@ -88,14 +111,6 @@ int main(int argc, char **argv) {
 							evs[i]->Callback(root(evs[i]->name), evs[i]->efds[j], EventManager::EXCEPTION);
 
 		}
-		//struct event_manager *ev=inotify_module();
-		//ev->refresh_config(root(ev->name));
-		/*
-		struct event_manager *ev=cnproc_module();
-		while(1) {
-			ev->callback(root(ev->name[0]));
-		}
-		*/
 	} catch(const std::string &e) {
 		std::cout << e << std::endl;
 	}

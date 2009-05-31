@@ -11,6 +11,16 @@ DateEvent::DateEvent() {
 	tasks=NULL;
 }
 
+DateEvent::~DateEvent() {
+	if(!tasks)
+		return;
+
+	int i;
+	for(i=0;tasks[i];++i)
+		delete tasks[i];
+	delete tasks;
+}
+
 void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
 	if(event_type!=TIMEOUT)
 		throw "Ouch, got a non-timeout event!";
@@ -20,18 +30,29 @@ void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
 	Time now;
 	struct context ctx;
 	bzero(&ctx, sizeof(ctx));
-	for(i=0;tasks[i];++i)
+	for(i=0;tasks[i];++i) {
+#ifdef DEBUG
+		printf("When=");
+		tasks[i]->when.Display();
+		printf("Now=");
+		now.Display();
+#endif
 		if(tasks[i]->when<=now) {
 			xmlNode cur=tasks[i]->task;
 			cmdCall(cur, ctx);
 			delete tasks[i];
 			tasks[i]=new DateTask(cur);
 		}
+	}
 }
 
 void DateEvent::RefreshConfig(xmlNode config) {
-	if(tasks)
-		free(tasks);
+	if(tasks) {
+		int i;
+		for(i=0;tasks[i];++i)
+			delete tasks[i];
+		delete tasks;
+	}
 	tasks=NULL;
 	int n=0;
 	while(!!config) {
@@ -112,7 +133,10 @@ DateTask::DateTask(xmlNode config)
 		else if(!config["day"]() && config["hour"]())
 			when.Add(1, Time::DAY);
 	}
+#ifdef DEBUG
+	printf("New task:");
 	when.Display();
+#endif
 }
 
 Time::Time() {

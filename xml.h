@@ -32,6 +32,8 @@ class xmlNode {
 
 		xmlNode operator[](int);
 		xmlNode operator++();
+		//Warning: dangerous function.
+		void Free();
 	private:
 		xmlNode(ezxml_t);
 		ezxml_t node;

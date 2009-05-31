@@ -102,6 +102,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 
 	fd = open(fname1, O_RDONLY);
 	memset(&cmdline, 0, sizeof(cmdline));
+	memset(&file, 0, sizeof(file));
 
 	if (fd > 0) {
 		cmdline_sz = read(fd, cmdline, sizeof(cmdline));
@@ -145,25 +146,33 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 	while(!!node) {
 		const char *afile=node["file"]();
 		if(afile)
-			if(regexp_match(afile, file)==0) {
+			if(!regexp_match(afile, file)) {
+#ifdef DEBUG
+				printf("Didn't matched file:'%s'VS'%s'\n", file, afile);
+#endif
 				++node;
 				continue;
 			}
-		 const char *match_cmd=node["cmdline"]();
-		 if(!match_cmd && !afile)
-			 throw std::string("Wait... you want to match every processes ? I prefer saying no.");
-		 if(match_cmd)
-			 if(regexp_match(match_cmd, cmdline)==0) {
-				 ++node;
-				 continue;
-			 }
-		 //Ok we matched everything, let's call command.
-		 struct context ctx;
-		 ctx.pid=ev->event_data.exec.process_pid;
-		 ctx.file=NULL;
-		 cmdCall(node, ctx);
-		 ++node;
-
+#ifdef DEBUG
+		printf("Matched file:%s\n", file);
+#endif
+		const char *match_cmd=node["cmdline"]();
+		if(!match_cmd && !afile)
+			throw std::string("Wait... you want to match every processes ? I prefer saying no.");
+		if(match_cmd)
+			if(!regexp_match(match_cmd, cmdline)) {
+				++node;
+				continue;
+			}
+#ifdef DEBUG
+		printf("Matched one!\n");
+#endif
+		//Ok we matched everything, let's call command.
+		struct context ctx;
+		ctx.pid=ev->event_data.exec.process_pid;
+		ctx.file=NULL;
+		cmdCall(node, ctx);
+		++node;
 	}
 }
 
@@ -193,6 +202,7 @@ int cnprocInit() {
 		perror("socket sk_nl error");
 		return rc;
 	}
+	bzero(&my_nla, sizeof(my_nla));
 	my_nla.nl_family = AF_NETLINK;
 	my_nla.nl_groups = CN_IDX_PROC;
 	my_nla.nl_pid = getpid();
@@ -203,7 +213,7 @@ int cnprocInit() {
 
 	err = bind(sk_nl, (struct sockaddr *)&my_nla, sizeof(my_nla));
 	if (err == -1) {
-		printf("binding sk_nl error");
+		perror("binding sk_nl error");
 		close(sk_nl);
 		sk_nl=-1;
 		return sk_nl;

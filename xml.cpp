@@ -88,13 +88,6 @@ bool xmlNode::operator!=(const char *arg) {
 	return false;
 }
 
-#if 0
-int main(int argc, char **argv) {
-	xmlNode t("prout.xml");
-	xmlNode a=t("branch");
-	while(!!a) {
-		printf("%s\n", a["arg"]());
-		++a;
-	}
+void xmlNode::Free() {
+	ezxml_free(node);
 }
-#endif

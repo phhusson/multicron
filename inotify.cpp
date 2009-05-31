@@ -9,29 +9,7 @@ extern "C" {
 };
 #include "commands.h"
 
-//struct event_manager *inotify_module() {
 InotifyEvent::InotifyEvent() {
-	/*
-	static struct event_manager *ret=NULL;
-	if(ret!=NULL)
-		return ret;
-	ret=new event_manager;
-
-	ret->rfds=(int*)malloc(sizeof(int)*2);
-	ret->rfds[0]=inotify_init();
-	ret->rfds[1]=-1;
-	ret->wfds=NULL;
-	ret->efds=NULL;
-
-	ret->callback=inotify_cb;
-	ret->name=strdup("inotify");
-	ret->refresh_config=inotify_conf;
-	ret->next_timeout=NULL;
-	inotify_files=(char**)malloc(sizeof(char*)*5);
-	memset(inotify_files, 0, sizeof(char*)*5);
-	*/
-
-
 	rfds=(int*)malloc(sizeof(int)*2);
 	rfds[0]=inotify_init();
 	if( rfds[0] < 0 )
@@ -40,9 +18,7 @@ InotifyEvent::InotifyEvent() {
 	wfds=NULL;
 	efds=NULL;
 
-	//callback=inotify_cb;
 	name=strdup("inotify");
-	//refresh_config=inotify_conf;
 	inotify_files=(char**)malloc(sizeof(char*)*5);
 	memset(inotify_files, 0, sizeof(char*)*5);
 	
@@ -80,7 +56,7 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 	char buffer[4096];
 	int ret;
 	int i=0;
-	//Now read the device by big blocks
+	
 	ret=read(this->rfds[0], buffer, 4096);
 	if(ret<0)
 		perror("read");
@@ -121,29 +97,20 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 			ctx.pid=0;
 			ctx.file=path;
 			if(strcmp(folder, inotify_files[event->wd])==0) {
-				regex_t preg;
-				if(node["match"]()) {
-					int ret=regcomp(&preg, node["match"](), REG_UTF8);
-					regmatch_t match;
-					if(ret!=0) {
-						char *errbuf=(char*)malloc(512);
-						memset(errbuf,0,512);
-						regerror(ret, &preg, errbuf, 512);
-						throw std::string("Pattern won't compile :")+errbuf;
-					}
-					ret=regexec(&preg, name, 1, &match, 0);
-					if(ret==0 && match.rm_so==0 && match.rm_eo==strlen(name)) {
-						printf("%s matched !!!\n", path);
-						cmdCall(node, ctx);
-					} 
-				} else if(node["file"]()) {
-					if(strcmp(node["file"](), name)) {
-						printf("%s matched!!!\n", path);
-					}
-				}
-
+				if(!node["file"]()) 
+					cmdCall(node, ctx);
+				else if(regexp_match(node["file"](), name))
+					cmdCall(node, ctx);
 			}
+			free(folder);
 			++node;
 		}
 	}
+}
+
+InotifyEvent::~InotifyEvent() {
+	int i;
+	for(i=0;inotify_files[i];i++)
+		free(inotify_files[i]);
+	free(inotify_files);
 }

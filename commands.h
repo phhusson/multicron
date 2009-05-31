@@ -7,7 +7,7 @@ typedef struct context context_t;
 
 struct cmd {
 	char *name;
-	void (*callback)(xmlNode, context_t);
+	void (*callback)(xmlNode, const context_t&);
 };
 
 void initCmds();

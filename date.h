@@ -34,6 +34,7 @@ class DateEvent : public EventManager {
 		void Callback(xmlNode config, int fd, ETYPE event_type);
 		struct timeval NextTimeout(xmlNode config);
 		void RefreshConfig(xmlNode config);
+		~DateEvent();
 	private:
 		DateTask **tasks;
 };

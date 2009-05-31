@@ -30,9 +30,6 @@ enum {
 #define IOPRIO_PRIO_DATA(mask)  ((mask) & IOPRIO_PRIO_MASK)
 #define IOPRIO_PRIO_VALUE(clas, data)  (((clas) << IOPRIO_CLASS_SHIFT) | data)
 
-//_syscall3(int, ioprio_set,int,which,int,who,int,ioprio);
-//End of copy
-
 struct cmd *cmds;
 
 void fill_context(context_t &ctx) {
@@ -44,19 +41,16 @@ void cmdCall(xmlNode arg, context_t context) {
 	fill_context(context);
 	int i=0;
 	while(cmds[i].name!=NULL) {
-		if(!!arg(cmds[i].name)) {
-			xmlNode t(arg(cmds[i].name));
-			while(!!t) {
-				cmds[i].callback(t, context);
-				++t;
-			}
-
+		xmlNode t(arg(cmds[i].name));
+		while(!!t) {
+			cmds[i].callback(t, context);
+			++t;
 		}
 		i++;
 	}
 }
 
-void ioniceCall(xmlNode arg, context_t context) {
+void ioniceCall(xmlNode arg, const context_t& context) {
 	printf("ionice called\n");
 	const char *nice_class=arg["class"]();
 	int ioprio;
@@ -80,11 +74,11 @@ void ioniceCall(xmlNode arg, context_t context) {
 	syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, context.pid, ioprio);
 }
 
-void cpuniceCall(xmlNode arg, context_t context) {
+void cpuniceCall(xmlNode arg, const context_t& context) {
 	printf("cpunice called\n");
 }
 
-void killCall(xmlNode arg, context_t context) {
+void killCall(xmlNode arg, const context_t& context) {
 	printf("kill called\n");
 	const char *sig=arg["signal"]();
 	int sigid;
@@ -93,18 +87,39 @@ void killCall(xmlNode arg, context_t context) {
 	else
 		sigid=10;//SIGUSR1
 	const char *pid=arg["pid"]();
+	int p;
 	if(pid)
-		context.pid=atoi(pid);
-	printf("kill(%d,%d)\n", context.pid, sigid);
+		p=atoi(pid);
+	else
+		p=context.pid;
+	printf("kill(%d,%d)\n", p, sigid);
 	return;
-	if(kill(context.pid, sigid)!=0) {
+	if(kill(p, sigid)!=0) {
 		perror("kill");
 	}
 }
 
-void cmdCll(xmlNode arg, context_t context) {
-	if(arg())
-		system(arg());
+void cmdCll(xmlNode arg, const context_t& context) {
+	if(arg()) {
+		int pid=fork();
+		if(pid>0)
+			return;
+		if(pid<0)
+			throw "Couldn't fork!";
+		char *p;
+		asprintf(&p, "%d", context.pid);
+		setenv("M_PID", p, 1);
+		if(context.file)
+			setenv("M_FILE", p, 1);
+		else
+			setenv("M_FILE", "(null)", 1);
+		exit(system(arg()));
+	}
+}
+
+extern bool reload;
+void reloadCall(xmlNode arg, const context_t &ctx) {
+	reload=true;
 }
 
 void initCmds() {
@@ -116,7 +131,8 @@ void initCmds() {
 	cmds[1].callback=cpuniceCall;
 	cmds[2].name=strdup("kill");
 	cmds[2].callback=killCall;
-	cmds[2].name=strdup("cmd");
-	cmds[2].callback=cmdCll;
+	cmds[3].name=strdup("cmd");
+	cmds[3].callback=cmdCll;
+	cmds[4].name=strdup("reload");
+	cmds[4].callback=reloadCall;
 }
-

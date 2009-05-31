@@ -18,4 +18,4 @@ class EventManager {
 
 };
 
-int regexp_match(const char *regexp, const char *val);
+bool regexp_match(const char *regexp, const char *val);

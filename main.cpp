@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 				Cmds::Update();
 				while(1) {
 					try {
-						root=xmlNode("prout.xml");
+						root=xmlNode("multicron.xml");
 						break;
 					} catch(...) {
 						//Let vim/whatever enough time to write the file

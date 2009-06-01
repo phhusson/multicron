@@ -17,7 +17,7 @@ bool reload;
 int main(int argc, char **argv) {
 	int i,j,max;
 	reload=true;
-	xmlNode root("prout.xml");
+	xmlNode root("multicron.xml");
 	EventManager **evs=NULL;
 	try {
 		while(1) {

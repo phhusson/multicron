@@ -8,6 +8,8 @@
 #include <pcreposix.h>
 #include "commands.h"
 #include <sys/select.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 struct event_manager *inotify_module();
 struct event_manager *cnproc_module();
@@ -49,6 +51,8 @@ int main(int argc, char **argv) {
 				for(i=0;evs[i];++i)
 					evs[i]->RefreshConfig(root(evs[i]->name));
 			}
+
+			while(waitpid(-1, NULL, WNOHANG)>0);
 		
 			fd_set rfds,wfds,efds;
 			FD_ZERO(&rfds);

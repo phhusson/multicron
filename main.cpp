@@ -2,6 +2,7 @@
 #include "multicron.h"
 #include "cnproc.h"
 #include "inotify.h"
+#include "uevent.h"
 #include "date.h"
 #include <iostream>
 #include <string>
@@ -42,11 +43,12 @@ int main(int argc, char **argv) {
 						delete evs[i];
 					free(evs);
 				}
-				evs=(EventManager**)malloc(4*sizeof(EventManager*));
+				evs=(EventManager**)malloc(5*sizeof(EventManager*));
 				evs[0]=new InotifyEvent;
 				evs[1]=new CNProcEvent;
 				evs[2]=new DateEvent;
-				evs[3]=NULL;
+				evs[3]=new UEvent;
+				evs[4]=NULL;
 				
 				for(i=0;evs[i];++i)
 					evs[i]->RefreshConfig(root(evs[i]->name));

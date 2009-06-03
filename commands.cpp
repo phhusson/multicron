@@ -93,7 +93,6 @@ void killCall(xmlNode arg, const context_t& context) {
 	else
 		p=context.pid;
 	printf("kill(%d,%d)\n", p, sigid);
-	return;
 	if(kill(p, sigid)!=0) {
 		perror("kill");
 	}

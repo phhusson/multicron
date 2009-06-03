@@ -15,6 +15,7 @@ class UEvent : public EventManager {
 		};
 		struct uev {
 			action_type action;
+			char *s_action;
 			char *devpath;
 			char *subsys;
 			int seqnum;

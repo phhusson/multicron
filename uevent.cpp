@@ -85,6 +85,7 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 				uev.action=UEvent::OFFLINE;
 			else
 				uev.action=UEvent::UNKNOWN;//Shouldn't happen on 2.6.30-rc6
+			uev.s_action=strdup(type);
 #define DEVPATH "DEVPATH="
 		} else if(strncmp(buffer+tot, DEVPATH, strlen(DEVPATH))==0) {
 			uev.devpath=strdup(buffer+tot+strlen(DEVPATH));
@@ -98,8 +99,37 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 		while(buffer[tot]!=0) ++tot;
 		++tot;
 	}
-	printf("uev = %d:%s:%s:%d\n", uev.action, uev.devpath, uev.subsys, seqnum);
+	printf("uev = %d:%s:%s:%d\n", uev.action, uev.devpath, uev.subsys, uev.seqnum);
 	printf("\n");
+	xmlNode node=config;
+	while(!!node) {
+		//Nothing useful in node ?
+		if(!node["subsystem"]() /*&& !node["action"]()*/ && !node["devpath"]()) {
+			//Next node then.
+			++node;
+			continue;
+		}
+		if(node["subsystem"]())
+			if(!regexp_match(node["subsystem"](), uev.subsys)) {
+				++node;
+				continue;
+			}
+		if(node["devpath"]())
+			if(!regexp_match(node["devpath"](), uev.devpath)) {
+				++node;
+				continue;
+			}
+		if(node["action"]())
+			if(!regexp_match(node["action"](), uev.s_action)) {
+				++node;
+				continue;
+			}
+		struct context ctx;
+		bzero(&ctx, sizeof(ctx));
+		//uevent infos would be usefull
+		//ctx.uev=uev;
+		Cmds::Call(node, ctx);
+	}
 }
 
 UEvent::UEvent() {

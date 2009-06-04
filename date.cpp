@@ -3,12 +3,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <string.h>
+#include <time.h>
 #include "xml.h"
 #include "multicron.h"
 #include "date.h"
 #include "commands.h"
-#include <string.h>
-#include <time.h>
 
 DateEvent::DateEvent() {
 	rfds=NULL;wfds=NULL;efds=NULL;

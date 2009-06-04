@@ -74,7 +74,7 @@ void InotifyEvent::RefreshConfig(xmlNode config) {
 	
 #ifdef BSD
 		int f;
-		f=open(file, O_RDONLY|O_DIRECTORY);
+		f=open(file, O_RDONLY);
 		struct kevent change;
 		EV_SET(&change, f, EVFILT_VNODE,
 				//ONESHOT or not ?
@@ -123,7 +123,7 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 	}
 
 
-	inotify_file *file=inotify_files[(int)ev.udata];
+	inotify_file file=inotify_files[(int)ev.udata];
 	xmlNode node=config;
 	while(!!node) {
 		char *folder=strdup(node["folder"]());
@@ -132,13 +132,13 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 		struct context ctx;
 		memset(&ctx, 0, sizeof(ctx));
 		ctx.pid=0;
-		if(strcmp(folder, file->filename)!=0) {
+		if(strcmp(folder, file.filename)!=0) {
 			free(folder);
 			++node;
 			continue;
 		}
 		if(!node["file"]()) {
-			time(&(file->last));
+			time(&(file.last));
 			Cmds::Call(node, ctx);
 			free(folder);
 			++node;
@@ -156,13 +156,13 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 			snprintf(path, sizeof(path), "%s/%s", folder, file_info->d_name);
 			path[sizeof(path)-1]=0;
 			stat(path, &stat_buf);
-			if(stat_buf.st_mtime<=file->last && stat_buf.st_ctime<=file->last)
+			if(stat_buf.st_mtime<=file.last && stat_buf.st_ctime<=file.last)
 				continue;
 			//Ok, file is newer than last check.
 			ctx.file=path;
 			Cmds::Call(node, ctx);
 		}
-		time(&(file->last));
+		time(&(file.last));
 		free(folder);
 		++node;
 	}

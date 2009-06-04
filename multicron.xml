@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <root>
-	<cnproc type="exec" cmdline=".*nspluginviewer.*">
+	<cnproc type="exec" cmdline="nspluginviewer.*">
 		<cmd>echo nspluginviewer launched !</cmd>
 		<kill signal="9"/>
 	</cnproc>

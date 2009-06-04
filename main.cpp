@@ -45,9 +45,14 @@ int main(int argc, char **argv) {
 				}
 				evs=(EventManager**)malloc(5*sizeof(EventManager*));
 				evs[0]=new InotifyEvent;
-				evs[1]=new CNProcEvent;
-				evs[2]=new DateEvent;
+				evs[1]=new DateEvent;
+#ifndef BSD
+				evs[2]=new CNProcEvent;
 				evs[3]=new UEvent;
+#else
+				evs[2]=NULL;
+				evs[3]=NULL;
+#endif
 				evs[4]=NULL;
 				
 				for(i=0;evs[i];++i)

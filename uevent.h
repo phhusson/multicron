@@ -1,9 +1,5 @@
 class UEvent : public EventManager {
 	public:
-		UEvent();
-		void Callback(xmlNode config, int fd, ETYPE event_type);
-		~UEvent();
-	private:
 		enum action_type {
 			ADD,
 			REMOVE,
@@ -13,6 +9,10 @@ class UEvent : public EventManager {
 			OFFLINE,
 			UNKNOWN
 		};
+		UEvent();
+		void Callback(xmlNode config, int fd, ETYPE event_type);
+		~UEvent();
+	private:
 		struct uev {
 			action_type action;
 			char *devpath;

@@ -20,6 +20,8 @@
 #include "multicron.h"
 #include "commands.h"
 #include "uevent.h"
+#include "uevent/uevent.h"
+#include "uevent/power.h"
 
 #define HOTPLUG_BUFFER_SIZE             1024
 #define HOTPLUG_NUM_ENVP                32
@@ -65,9 +67,12 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 
 	printf("\n");
 	struct uev uev;
-	bzero(&uev, sizeof(uev));
+	UEvents::Event *ev=new UEvents::Power;
 	while(tot<buflen) {
 #define ACT "ACTION="
+		//Ignore "invalid" (mostly sent by udevd) messages
+		if(!isalpha(*(buffer+tot)))
+			break;
 		printf("%s\n", buffer+tot);
 		if(strncmp(buffer+tot, ACT, strlen(ACT))==0) {
 			char *type=buffer+tot+strlen(ACT);
@@ -91,14 +96,30 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 #define SUBSYS "SUBSYSTEM="
 		} else if(strncmp(buffer+tot, SUBSYS, strlen(SUBSYS))==0) {
 			uev.subsys=strdup(buffer+tot+strlen(SUBSYS));
+			//Got subsystem ? Ok now we can look for an appropriate event handler.
+			//ATM only power events and no search.
+			if(strcmp(uev.subsys, "power_supply")!=0) {
+				printf("Unsupported subsys\n");
+				return;
+			}
+
 #define SEQNUM "SEQNUM="
 		} else if(strncmp(buffer+tot, SEQNUM, strlen(SEQNUM))==0) {
 			uev.seqnum=atoi(buffer+tot+strlen(SEQNUM));
+		} else {
+			char *name=buffer+tot;
+			char *value=index(buffer+tot, '=');
+			if(!value)
+				continue;
+			value[0]=0;
+			value++;
+			ev->SetVar(name, value);
 		}
 		while(buffer[tot]!=0) ++tot;
 		++tot;
 	}
-	printf("uev = %d:%s:%s:%d\n", uev.action, uev.devpath, uev.subsys, seqnum);
+	printf("uev = %d:%s:%s:%d\n", uev.action, uev.devpath, uev.subsys, uev.seqnum);
+	delete ev;
 	printf("\n");
 }
 

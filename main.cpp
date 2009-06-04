@@ -3,7 +3,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <pcreposix.h>
 #include "xml.h"
 #include "multicron.h"
 #include "cnproc.h"

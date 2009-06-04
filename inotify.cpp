@@ -2,7 +2,6 @@
 #include "xml.h"
 #include "multicron.h"
 #include "inotify.h"
-#include <pcreposix.h>
 extern "C" {
 #include <sys/inotify.h>
 #include <string.h>

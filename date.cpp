@@ -1,3 +1,8 @@
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "xml.h"
 #include "multicron.h"
 #include "date.h"

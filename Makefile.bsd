@@ -1,0 +1,12 @@
+CFLAGS=-Wall -fPIC -g -DBSD
+CXXFLAGS=-Wall -fPIC -g -DBSD
+
+all: multicron
+
+OBJECTS=ezxml.o xml.o main.o inotify.o commands.o regexp.o date.o
+
+multicron: $(OBJECTS)
+	g++ $(OBJECTS) -o multicron -Wall -lpcreposix -g
+
+clean:
+	rm -f multicron $(OBJECTS)

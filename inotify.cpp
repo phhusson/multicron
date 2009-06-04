@@ -8,13 +8,15 @@
 	};
 #else
 	#include <sys/event.h>
-	#include <sys/time.h>
-	#include <sys/types.h>
-	#include <fcntl.h>
-	#include <stdio.h>
-	#include <stdlib.h>
-	#include <unistd.h>
 #endif
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <dirent.h>
 #include <string.h>
 #include "commands.h"
 
@@ -78,7 +80,7 @@ void InotifyEvent::RefreshConfig(xmlNode config) {
 				//ONESHOT or not ?
 			EV_ADD | EV_ENABLE | EV_ONESHOT,
 			NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB,
-			0, n);
+			0, (void*)n);
 		if(kevent(rfds[0], &change, 1, NULL, 0, 0)<0) {
 			perror("kevent");
 			return;
@@ -121,7 +123,8 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 	}
 
 
-	inotify_file *file=inotify_files[ev.udata];
+	inotify_file *file=inotify_files[(int)ev.udata];
+	xmlNode node=config;
 	while(!!node) {
 		char *folder=strdup(node["folder"]());
 		if(folder[strlen(folder)-1]=='/')

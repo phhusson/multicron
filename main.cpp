@@ -1,16 +1,20 @@
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <pcreposix.h>
 #include "xml.h"
 #include "multicron.h"
 #include "cnproc.h"
 #include "inotify.h"
 #include "uevent.h"
 #include "date.h"
+/*
 #include <iostream>
 #include <string>
-#include <pcreposix.h>
+*/
 #include "commands.h"
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 
 struct event_manager *inotify_module();
 struct event_manager *cnproc_module();
@@ -122,8 +126,8 @@ int main(int argc, char **argv) {
 							evs[i]->Callback(root(evs[i]->name), evs[i]->efds[j], EventManager::EXCEPTION);
 
 		}
-	} catch(const std::string &e) {
-		std::cout << e << std::endl;
+	} catch(const char *e) {
+		printf("%s\n", e);
 	}
 	return 0;
 }

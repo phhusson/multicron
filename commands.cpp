@@ -5,8 +5,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#ifdef BSD
+#else
 #include <linux/unistd.h>
 #include <sys/syscall.h>
+#endif
 
 /* Copy from linux/ioprio.h*/
 enum {
@@ -52,6 +55,7 @@ void Cmds::Call(xmlNode arg, context_t context) {
 
 void ioniceCall(xmlNode arg, const context_t& context) {
 	printf("ionice called\n");
+#ifndef BSD
 	const char *nice_class=arg["class"]();
 	int ioprio;
 	if(!nice_class)
@@ -72,6 +76,9 @@ void ioniceCall(xmlNode arg, const context_t& context) {
 		ioprio=IOPRIO_PRIO_VALUE(ioprio, 4);
 
 	syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, context.pid, ioprio);
+#else
+	printf("ionice not supported on bsd\n");
+#endif
 }
 
 void cpuniceCall(xmlNode arg, const context_t& context) {

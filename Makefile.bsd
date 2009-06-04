@@ -1,12 +1,12 @@
-CFLAGS=-Wall -fPIC -g -DBSD
-CXXFLAGS=-Wall -fPIC -g -DBSD
+CFLAGS=-Wall -fPIC -g -DBSD `pcre-config --cflags-posix`
+CXXFLAGS=-Wall -fPIC -g -DBSD `pcre-config --cflags-posix`
 
 all: multicron
 
 OBJECTS=ezxml.o xml.o main.o inotify.o commands.o regexp.o date.o
 
 multicron: $(OBJECTS)
-	g++ $(OBJECTS) -o multicron -Wall -lpcreposix -g
+	g++ $(OBJECTS) -o multicron -Wall -g `pcre-config --libs-posix`
 
 clean:
 	rm -f multicron $(OBJECTS)

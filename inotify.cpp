@@ -2,10 +2,20 @@
 #include "xml.h"
 #include "multicron.h"
 #include "inotify.h"
-extern "C" {
-#include <sys/inotify.h>
+#ifndef BSD
+	extern "C" {
+	#include <sys/inotify.h>
+	};
+#else
+	#include <sys/event.h>
+	#include <sys/time.h>
+	#include <sys/types.h>
+	#include <fcntl.h>
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <unistd.h>
+#endif
 #include <string.h>
-};
 #include "commands.h"
 
 #define ALLOC_STEP 5
@@ -69,7 +79,7 @@ void InotifyEvent::RefreshConfig(xmlNode config) {
 			EV_ADD | EV_ENABLE | EV_ONESHOT,
 			NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB,
 			0, n);
-		if(kevent(KQUEUE_FD, &change, 1, NULL, 0, 0)<0) {
+		if(kevent(rfds[0], &change, 1, NULL, 0, 0)<0) {
 			perror("kevent");
 			return;
 		}
@@ -104,7 +114,7 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 		return;
 	struct kevent ev;
 	int ret;
-	ret=kevent(KQUEUE_FD, NULL, 0, &ev, 1, NULL);
+	ret=kevent(rfds[0], NULL, 0, &ev, 1, NULL);
 	if(ret<0) {
 		perror("kevent");
 		return;
@@ -119,13 +129,13 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 		struct context ctx;
 		memset(&ctx, 0, sizeof(ctx));
 		ctx.pid=0;
-		if(strcmp(folder, file.filename)!=0) {
+		if(strcmp(folder, file->filename)!=0) {
 			free(folder);
 			++node;
 			continue;
 		}
 		if(!node["file"]()) {
-			time(&(file.last));
+			time(&(file->last));
 			Cmds::Call(node, ctx);
 			free(folder);
 			++node;
@@ -143,13 +153,13 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 			snprintf(path, sizeof(path), "%s/%s", folder, file_info->d_name);
 			path[sizeof(path)-1]=0;
 			stat(path, &stat_buf);
-			if(path.st_mtime<=file.last && path.st_ctime<=file.last)
+			if(stat_buf.st_mtime<=file->last && stat_buf.st_ctime<=file->last)
 				continue;
 			//Ok, file is newer than last check.
 			ctx.file=path;
 			Cmds::Call(node, ctx);
 		}
-		time(&(file.last));
+		time(&(file->last));
 		free(folder);
 		++node;
 	}

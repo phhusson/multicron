@@ -1,8 +1,8 @@
 namespace UEvents {
 	class Power : public  Event {
 		public:
+			Power(UEvents::Event *ev);
 			Power();
-			void Plouf();
 			~Power();
 			void SetVar(const char *name, const char *value);
 			void Display();

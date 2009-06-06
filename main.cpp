@@ -127,6 +127,8 @@ int main(int argc, char **argv) {
 		}
 	} catch(const char *e) {
 		printf("%s\n", e);
+	} catch(...) {
+		printf(" Got unknown exception!\n");
 	}
 	return 0;
 }

@@ -1,12 +1,11 @@
 namespace UEvents {
 	class Event {
-		friend class ::UEvent;
 		public:
 			virtual void SetVar(const char *name, const char *value) {};
 			virtual ~Event() { };
-			virtual char* getName() {return NULL;};
-			virtual Event* Create() {return NULL;};//Create self
-		private:
+			virtual bool Match(xmlNode) { return false;};
+
+			//Damn i hate letting these as public, but i can't see how to do otherwise
 			::UEvent::action_type action;
 			char *devpath;
 			char *subsys;

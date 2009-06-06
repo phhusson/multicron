@@ -21,6 +21,7 @@
 #include "uevent.h"
 #include "uevent/uevent.h"
 #include "uevent/power.h"
+#include "uevent/usb.h"
 
 #define HOTPLUG_BUFFER_SIZE             1024
 #define HOTPLUG_NUM_ENVP                32
@@ -65,9 +66,7 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 	++tot;
 
 	printf("\n");
-	struct uev uev;
-	UEvents::Event *ev=new UEvents::Power;
-	bzero(&uev, sizeof(uev));
+	UEvents::Event *ev=new UEvents::Event;
 	while(tot<buflen) {
 #define ACT "ACTION="
 		//Ignore "invalid" (mostly sent by udevd) messages
@@ -77,36 +76,42 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 		if(strncmp(buffer+tot, ACT, strlen(ACT))==0) {
 			char *type=buffer+tot+strlen(ACT);
 			if(strcmp(type, "add")==0)
-				uev.action=UEvent::ADD;
+				ev->action=UEvent::ADD;
 			else if(strcmp(type, "remove")==0)
-				uev.action=UEvent::REMOVE;
+				ev->action=UEvent::REMOVE;
 			else if(strcmp(type, "change")==0)
-				uev.action=UEvent::CHANGE;
+				ev->action=UEvent::CHANGE;
 			else if(strcmp(type, "move")==0)
-				uev.action=UEvent::MOVE;
+				ev->action=UEvent::MOVE;
 			else if(strcmp(type, "online")==0)
-				uev.action=UEvent::ONLINE;
+				ev->action=UEvent::ONLINE;
 			else if(strcmp(type, "offline")==0)
-				uev.action=UEvent::OFFLINE;
+				ev->action=UEvent::OFFLINE;
 			else
-				uev.action=UEvent::UNKNOWN;//Shouldn't happen on 2.6.30-rc6
-			uev.s_action=strdup(type);
+				ev->action=UEvent::UNKNOWN;//Shouldn't happen on 2.6.30-rc6
 #define DEVPATH "DEVPATH="
 		} else if(strncmp(buffer+tot, DEVPATH, strlen(DEVPATH))==0) {
-			uev.devpath=strdup(buffer+tot+strlen(DEVPATH));
+			ev->devpath=strdup(buffer+tot+strlen(DEVPATH));
 #define SUBSYS "SUBSYSTEM="
 		} else if(strncmp(buffer+tot, SUBSYS, strlen(SUBSYS))==0) {
-			uev.subsys=strdup(buffer+tot+strlen(SUBSYS));
+			ev->subsys=strdup(buffer+tot+strlen(SUBSYS));
 			//Got subsystem ? Ok now we can look for an appropriate event handler.
 			//ATM only power events and no search.
-			if(strcmp(uev.subsys, "power_supply")!=0) {
+			if(strcmp(ev->subsys, "power_supply")==0) {
+				UEvents::Event *tmp=ev;
+				ev=new UEvents::Power(tmp);
+				delete tmp;
+			} else if(strcmp(ev->subsys, "usb")==0) {
+				UEvents::Event *tmp=ev;
+				ev=new UEvents::USB(tmp);
+				delete tmp;
+			} else {
 				printf("Unsupported subsys\n");
-				return;
 			}
 
 #define SEQNUM "SEQNUM="
 		} else if(strncmp(buffer+tot, SEQNUM, strlen(SEQNUM))==0) {
-			uev.seqnum=atoi(buffer+tot+strlen(SEQNUM));
+			ev->seqnum=atoi(buffer+tot+strlen(SEQNUM));
 		} else {
 			char *name=buffer+tot;
 			char *value=index(buffer+tot, '=');
@@ -119,42 +124,40 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 			value++;
 			printf("SetVar(%s, %s)\n", name, value);
 			ev->SetVar(name, value);
+			while(buffer[tot]!=0) ++tot;//Move twice as we added a new \0
+			++tot;
 		}
 		while(buffer[tot]!=0) ++tot;
 		++tot;
 	}
-	printf("uev = %d:%s:%s:%d\n", uev.action, uev.devpath, uev.subsys, uev.seqnum);
-	delete ev;
+
 	printf("\n");
 	xmlNode node=config;
 	while(!!node) {
-		//Nothing useful in node ?
-		if(!node["subsystem"]() /*&& !node["action"]()*/ && !node["devpath"]()) {
-			//Next node then.
-			++node;
-			continue;
-		}
 		if(node["subsystem"]())
-			if(!regexp_match(node["subsystem"](), uev.subsys)) {
+			if(!regexp_match(node["subsystem"](), ev->subsys)) {
 				++node;
 				continue;
 			}
 		if(node["devpath"]())
-			if(!regexp_match(node["devpath"](), uev.devpath)) {
+			if(!regexp_match(node["devpath"](), ev->devpath)) {
 				++node;
 				continue;
 			}
-		if(node["action"]())
-			if(!regexp_match(node["action"](), uev.s_action)) {
-				++node;
-				continue;
-			}
+		if(!ev->Match(node)) {
+			++node;
+			continue;
+		}
+		//TODO
+		//if(node["action"]())
 		struct context ctx;
 		bzero(&ctx, sizeof(ctx));
 		//uevent infos would be usefull
 		//ctx.uev=uev;
 		Cmds::Call(node, ctx);
+		++node;
 	}
+	delete ev;
 }
 
 UEvent::UEvent() {
@@ -164,7 +167,7 @@ UEvent::UEvent() {
 	wfds=NULL;
 	efds=NULL;
 
-	name=strdup("cnproc");
+	name=strdup("uevent");
 }
 
 UEvent::~UEvent() {

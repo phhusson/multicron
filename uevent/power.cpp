@@ -19,7 +19,35 @@ static const char *technology_text[] = {
 };
 static const char *type_text[] = { "Battery", "UPS", "Mains", "USB" };
 
+UEvents::Power::Power(UEvents::Event *ev) {
+	subsys=ev->subsys;//Well, it will be power_supply... I hope.
+	if(strcmp(subsys, "power_supply")!=0)
+		throw "UEvents::Power constructor for non power_supply subsystem";
+	devpath=ev->devpath;
+	seqnum=ev->seqnum;
+	action=ev->action;
+
+	name=NULL;
+	//type= ?
+	status=UNKNOWN_STATUS;
+	technology=UNKNOWN_TECHNOLOGY;
+	voltage_min_design=-1;
+	voltage_now=-1;
+	charge_full_design=-1;
+	charge_full=-1;
+	charge_now=-1;
+	model_name=NULL;
+	manufacturer=NULL;
+	serialnum=NULL;
+
+}
+
 UEvents::Power::Power() {
+	devpath=NULL;
+	subsys=NULL;
+	seqnum=-1;
+	action=::UEvent::UNKNOWN;
+
 	name=NULL;
 	//type= ?
 	status=UNKNOWN_STATUS;

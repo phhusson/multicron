@@ -35,4 +35,8 @@
 	<inotify folder="/home/phh/multicron" file="!multicron.xml">
 		<reload/>
 	</inotify>
+
+	<uevent devtype="usb_device" vid="090c">
+		<cmd>echo OK</cmd>
+	</uevent>
 </root>

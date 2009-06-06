@@ -110,10 +110,14 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 		} else {
 			char *name=buffer+tot;
 			char *value=index(buffer+tot, '=');
-			if(!value)
+			if(!value) {
+				while(buffer[tot]!=0) ++tot;
+				++tot;
 				continue;
+			}
 			value[0]=0;
 			value++;
+			printf("SetVar(%s, %s)\n", name, value);
 			ev->SetVar(name, value);
 		}
 		while(buffer[tot]!=0) ++tot;

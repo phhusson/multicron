@@ -10,7 +10,7 @@ char *xmlAttribute::operator=(char *val) {
 }
 #endif
 
-const char *xmlAttribute::operator()() {
+const char *xmlAttribute::operator()() const {
 	return ezxml_attr(node, attr_name);
 }
 
@@ -39,12 +39,12 @@ xmlNode::xmlNode(int fd) {
 		throw std::string("Can't parse this file");
 }
 
-xmlNode xmlNode::operator()(const char* name) {
+xmlNode xmlNode::operator()(const char* name) const {
 	ezxml_t tree=ezxml_child(node, name);
 	return xmlNode(tree);
 }
 
-xmlAttribute xmlNode::operator[](const char *name) {
+xmlAttribute xmlNode::operator[](const char *name) const {
 	return xmlAttribute(node, name);
 }
 
@@ -55,11 +55,11 @@ const char *xmlNode::operator=(const char *val) {
 }
 #endif
 
-const char *xmlNode::operator()() {
+const char *xmlNode::operator()() const {
 	return ezxml_txt(node);
 }
 
-xmlNode xmlNode::operator[](int arg) {
+xmlNode xmlNode::operator[](int arg) const {
 	ezxml_t tmp=node;
 	while( (arg--)>0 ) {
 		if(tmp==NULL)
@@ -76,13 +76,13 @@ xmlNode xmlNode::operator++() {
 	return (*this);
 }
 
-bool xmlNode::operator!() {
+bool xmlNode::operator!() const {
 	if(node && node->name)
 		return false;
 	return true;
 }
 
-bool xmlNode::operator!=(const char *arg) {
+bool xmlNode::operator!=(const char *arg) const {
 	if(node && node->name && strcmp(node->name, arg)==0)
 		return true;
 	return false;

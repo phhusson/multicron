@@ -8,7 +8,7 @@ class xmlAttribute {
 #ifdef WRITE_XML
 		char *operator=(char*);
 #endif
-		const char *operator()();
+		const char *operator()() const;
 	private:
 		xmlAttribute(ezxml_t, const char*);
 		ezxml_t node;
@@ -21,16 +21,16 @@ class xmlNode {
 		xmlNode(char *buf, int ln);
 		xmlNode(int fd);
 
-		xmlNode operator()(const char *);
-		xmlAttribute operator[](const char*);
+		xmlNode operator()(const char *) const;
+		xmlAttribute operator[](const char*) const;
 #ifdef WRITE_XML
 		char *operator=(const char*);
 #endif
-		const char *operator()();
-		bool operator!();
-		bool operator!=(const char *arg);
+		const char *operator()() const;
+		bool operator!() const;
+		bool operator!=(const char *arg) const;
 
-		xmlNode operator[](int);
+		xmlNode operator[](int) const;
 		xmlNode operator++();
 		//Warning: dangerous function.
 		void Free();

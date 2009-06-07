@@ -40,7 +40,7 @@ void fill_context(context_t &ctx) {
 		ctx.pid=getpid();
 }
 
-void Cmds::Call(xmlNode arg, context_t context) {
+void Cmds::Call(const xmlNode& arg, context_t context) {
 	fill_context(context);
 	int i=0;
 	while(cmds[i].name!=NULL) {
@@ -53,7 +53,7 @@ void Cmds::Call(xmlNode arg, context_t context) {
 	}
 }
 
-void ioniceCall(xmlNode arg, const context_t& context) {
+void ioniceCall(const xmlNode& arg, const context_t& context) {
 	printf("ionice called\n");
 #ifndef BSD
 	const char *nice_class=arg["class"]();
@@ -81,11 +81,11 @@ void ioniceCall(xmlNode arg, const context_t& context) {
 #endif
 }
 
-void cpuniceCall(xmlNode arg, const context_t& context) {
+void cpuniceCall(const xmlNode& arg, const context_t& context) {
 	printf("cpunice called\n");
 }
 
-void killCall(xmlNode arg, const context_t& context) {
+void killCall(const xmlNode& arg, const context_t& context) {
 	printf("kill called\n");
 	const char *sig=arg["signal"]();
 	int sigid;
@@ -105,7 +105,7 @@ void killCall(xmlNode arg, const context_t& context) {
 	}
 }
 
-void cmdCall(xmlNode arg, const context_t& context) {
+void cmdCall(const xmlNode& arg, const context_t& context) {
 	if(arg()) {
 		int pid=fork();
 		if(pid>0)
@@ -124,7 +124,7 @@ void cmdCall(xmlNode arg, const context_t& context) {
 }
 
 extern bool reload;
-void reloadCall(xmlNode arg, const context_t &ctx) {
+void reloadCall(const xmlNode& arg, const context_t &ctx) {
 	reload=true;
 }
 

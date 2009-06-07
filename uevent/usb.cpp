@@ -25,15 +25,7 @@ void UEvents::USB::Zero() {
 	subsys=NULL;
 	seqnum=-1;
 	action=::UEvent::UNKNOWN;
-
-	device=NULL;
-	product=NULL;
-	type=NULL;
-	interface=NULL;
-	busnum=0;
-	devnum=0;
-	modalias=NULL;
-
+	
 	bInterfaceClass=0;
 	bInterfaceSubClass=0;
 	bInterfaceProtocol=0;
@@ -50,30 +42,21 @@ UEvents::USB::~USB() {
 		free(devpath);
 	if(subsys)
 		free(subsys);
-	if(device)
-		free(device);
-	if(product)
-		free(product);
-	if(type)
-		free(type);
-	if(interface)
-		free(interface);
-	if(modalias)
-		free(modalias);
+	if(devtype)
+		free(devtype);
 }
 
 void UEvents::USB::SetVar(const char *name, const char *value) {
 	if(strcmp(name, "DEVTYPE")==0) {
 		devtype=strdup(value);
 	} else if(strcmp(name, "DEVICE")==0) {
-		device=strdup(value);
+		sscanf(value, "/proc/bus/usb/%d/%d", &busid, &devid);
 	} else if(strcmp(name, "PRODUCT")==0) {
-		product=strdup(value);
 		sscanf(value, "%04x/%04x/%04x", &idVendor, &idProduct, &bcdDevice);
 	} else if(strcmp(name, "TYPE")==0) {
-		type=strdup(value);
+		sscanf(value, "%d/%d/%d", &bDeviceClass, &bDeviceSubClass, &bDeviceProtocol);
 	} else if(strcmp(name, "INTERFACE")==0) {
-		interface=strdup(value);
+		sscanf(value, "%d/%d/%d", &bInterfaceClass, &bInterfaceSubClass, &bInterfaceProtocol);
 	} else if(strcmp(name, "MODALIAS")==0) {
 		sscanf(value,
 			"usb:"

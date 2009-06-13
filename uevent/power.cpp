@@ -80,13 +80,13 @@ void UEvents::Power::SetVar(const char *name, const char *value) {
 	if(strcmp(name, "POWER_SUPPLY_NAME")==0) {
 		name=strdup(value);
 	} else if(strcmp(name, "POWER_SUPPLY_TYPE")==0) {
-		for(i=0;i<sizeof(type_text);i++)
+		for(i=0;i<(sizeof(type_text)/sizeof(*type_text));i++)
 			if(strcmp(type_text[i], value)==0)
 				type=(UEvents::Power::power_type)i;
 	} else if(strcmp(name, "POWER_SUPPLY_PRESENT")==0) {
 		present=atoi(value)==1 ? true : false;
 	} else if(strcmp(name, "POWER_SUPPLY_TECHNOLOGY")==0) {
-		for(i=0;i<sizeof(technology_text);i++)
+		for(i=0;i<(sizeof(technology_text)/sizeof(*technology_text));i++)
 			if(strcmp(technology_text[i], value)==0)
 				technology=(UEvents::Power::power_technology)i;
 	} else if(strcmp(name, "POWER_SUPPLY_VOLTAGE_MIN_DESIGN")==0) {

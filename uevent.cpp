@@ -116,13 +116,13 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 			char *name=buffer+tot;
 			char *value=index(buffer+tot, '=');
 			if(!value) {
-				printf("WTF ! got %s\n", name);
 				while(buffer[tot]!=0) ++tot;
 				++tot;
 				continue;
 			}
 			value[0]=0;
 			value++;
+			printf("SetVar(%s, %s)\n", name, value);
 			ev->SetVar(name, value);
 			while(buffer[tot]!=0) ++tot;//Move twice as we added a new \0
 			++tot;

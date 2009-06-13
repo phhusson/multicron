@@ -21,45 +21,13 @@ struct event_manager *cnproc_module();
 bool reload;
 
 int main(int argc, char **argv) {
-	int i,j,max;
+	int max;
 	reload=true;
-	xmlNode root("multicron.xml");
-	EventManager **evs=NULL;
 	try {
 		while(1) {
 			if(reload) {
-				printf("Let's reload folks!\n");
+				MainLoop::Reload();
 				reload=false;
-				root.Free();
-				Cmds::Update();
-				while(1) {
-					try {
-						root=xmlNode("multicron.xml");
-						break;
-					} catch(...) {
-						//Let vim/whatever enough time to write the file
-						sleep(1);
-					}
-				}
-				if(evs) {
-					for(i=0;evs[i];++i)
-						delete evs[i];
-					free(evs);
-				}
-				evs=(EventManager**)malloc(5*sizeof(EventManager*));
-				evs[0]=new InotifyEvent;
-				evs[1]=new DateEvent;
-#ifndef BSD
-				evs[2]=new CNProcEvent;
-				evs[3]=new UEvent;
-#else
-				evs[2]=NULL;
-				evs[3]=NULL;
-#endif
-				evs[4]=NULL;
-				
-				for(i=0;evs[i];++i)
-					evs[i]->RefreshConfig(root(evs[i]->name));
 			}
 
 			while(waitpid(-1, NULL, WNOHANG)>0);
@@ -70,59 +38,24 @@ int main(int argc, char **argv) {
 			FD_ZERO(&efds);
 			max=0;
 
-			//Read FDs
-			for(i=0;evs[i];++i)
-				evs[i]->AddFDs(rfds, EventManager::READ, max);
+			MainLoop::AddFDs(rfds, EventManager::READ, max);
+			MainLoop::AddFDs(wfds, EventManager::WRITE, max);
+			MainLoop::AddFDs(efds, EventManager::EXCEPTION, max);
 
-			//Write FDs
-			for(i=0;evs[i];++i)
-				evs[i]->AddFDs(rfds, EventManager::WRITE, max);
-
-			//Exception FDs
-			for(i=0;evs[i];++i)
-				evs[i]->AddFDs(rfds, EventManager::EXCEPTION, max);
-
-			struct timeval tv,tv2;
-			tv.tv_sec=1e9;
-			tv.tv_usec=0;
-			for(i=0;evs[i];++i) {
-				tv2=evs[i]->NextTimeout(root(evs[i]->name));
-				if(tv2.tv_sec <= tv.tv_sec)
-					tv.tv_sec=tv2.tv_sec;
-
-			}
+			struct timeval tv;
+			MainLoop::NextTimeout(tv);
 
 			int ret=select(max+1, &rfds, &wfds, &efds, &tv);
 			
 			//Call timeouts
 			if(ret==0) {
-				for(i=0;evs[i];++i)
-					evs[i]->Callback(root(evs[i]->name), -1, EventManager::TIMEOUT);
+				MainLoop::CallTimeout();
 
 				continue;
 			}
-
-
-			//Read FDs
-			for(i=0;evs[i];++i)
-				if(evs[i]->rfds)
-					for(j=0;evs[i]->rfds[j]>=0;++j)
-						if(FD_ISSET(evs[i]->rfds[j], &rfds))
-							evs[i]->Callback(root(evs[i]->name), evs[i]->rfds[j], EventManager::READ);
-
-			//Write FDs
-			for(i=0;evs[i];++i)
-				if(evs[i]->wfds)
-					for(j=0;evs[i]->wfds[j]>=0;++j)
-						if(FD_ISSET(evs[i]->wfds[j], &wfds))
-							evs[i]->Callback(root(evs[i]->name), evs[i]->wfds[j], EventManager::WRITE);
-
-			//Exception FDs
-			for(i=0;evs[i];++i)
-				if(evs[i]->efds)
-					for(j=0;evs[i]->efds[j]>=0;++j)
-						if(FD_ISSET(evs[i]->efds[j], &efds))
-							evs[i]->Callback(root(evs[i]->name), evs[i]->efds[j], EventManager::EXCEPTION);
+			MainLoop::Callback(rfds, EventManager::READ);
+			MainLoop::Callback(wfds, EventManager::WRITE);
+			MainLoop::Callback(efds, EventManager::EXCEPTION);
 
 		}
 	} catch(const char *e) {
@@ -174,4 +107,153 @@ void EventManager::AddFDs(fd_set &fds, ETYPE event_type, int &max) const {
 }
 
 EventManager::~EventManager() {
+}
+
+MainLoop::MainLoop() : root(xmlNode("multicron.xml")) {
+	//Do nothing, everything is done in Reload();
+	//But needed for singleton
+	evs=NULL;
+}
+
+MainLoop *MainLoop::Get() {
+	static MainLoop *ptr=NULL;
+	if(ptr==NULL)
+		ptr=new MainLoop;
+	return ptr;
+}
+
+void MainLoop::Reload() {
+	int i;
+	printf("Let's reload folks!\n");
+	MainLoop *self=Get();
+	self->root.Free();
+	Cmds::Update();
+	while(1) {
+		try {
+			self->root=xmlNode("multicron.xml");
+			break;
+		} catch(...) {
+			//Let vim/whatever enough time to write the file correctly
+			sleep(1);
+		}
+	}
+	if(self->evs) {
+		for(i=0;self->evs[i];++i)
+			delete self->evs[i];
+		free(self->evs);
+	}
+	self->n=0;
+	self->evs=NULL;
+#if 0
+#ifndef BSD
+	self->evs=(EventManager**)malloc(5*sizeof(EventManager*));
+	self->evs[0]=new InotifyEvent;
+	self->evs[1]=new DateEvent;
+	self->evs[2]=new CNProcEvent;
+	self->evs[3]=new UEvent;
+	self->evs[4]=NULL;
+	self->n=4;
+#else
+	self->evs=(EventManager**)malloc(3*sizeof(EventManager*));
+	self->evs[0]=new InotifyEvent;
+	self->evs[1]=new DateEvent;
+	self->evs[2]=NULL;
+	self->n=2;
+#endif
+#endif
+
+	AddEM(new InotifyEvent);
+	AddEM(new DateEvent);
+#ifndef BSD
+	AddEM(new CNProcEvent);
+	AddEM(new UEvent);
+#endif
+	
+	for(i=0;self->evs[i];++i)
+		self->evs[i]->RefreshConfig(self->root(self->evs[i]->name));
+}
+
+void MainLoop::AddEM(EventManager *ev) {
+	if(ev==NULL)
+		throw "Want to add a null event manager";
+	MainLoop *self=Get();
+	self->evs=(EventManager**)realloc(self->evs, (self->n+2)*sizeof(EventManager*));
+	self->evs[self->n+1]=NULL;
+	self->evs[self->n]=ev;
+	++(self->n);
+}
+
+void MainLoop::AddFDs(fd_set &fds, EventManager::ETYPE event_type,  int &max) {
+	MainLoop *self=Get();
+	int i;
+	for(i=0;i<(self->n); ++i) 
+		self->evs[i]->AddFDs(fds, event_type, max);
+}
+
+void MainLoop::NextTimeout(struct timeval &tv) {
+	struct timeval tv2;
+	MainLoop *self=Get();
+	int i;
+	tv.tv_sec=1e9;
+	tv.tv_usec=0;
+	for(i=0;i<(self->n);++i) {
+		tv2=self->evs[i]->NextTimeout(self->root(self->evs[i]->name));
+		if(tv2.tv_sec < tv.tv_sec) {
+			tv.tv_sec=tv2.tv_sec;
+			tv.tv_usec=tv2.tv_usec;
+		} else if(tv2.tv_sec==tv.tv_sec) 
+			if(tv2.tv_usec<tv.tv_usec)
+				tv.tv_usec=tv2.tv_usec;
+
+	}
+}
+
+void MainLoop::CallTimeout() {
+	MainLoop *self=Get();
+	int i;
+	for(i=0;i<(self->n);++i)
+		self->evs[i]->Callback(
+				self->root(self->evs[i]->name),
+				-1,
+				EventManager::TIMEOUT);
+}
+
+void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
+	MainLoop *self=Get();
+	int i,j;
+	switch(event_type) {
+		case EventManager::READ:
+			for(i=0;self->evs[i];++i)
+				if(self->evs[i]->rfds)
+					for(j=0;self->evs[i]->rfds[j]>=0;++j)
+						if(FD_ISSET(self->evs[i]->rfds[j], &fds))
+							self->evs[i]->Callback(
+									self->root(self->evs[i]->name),
+									self->evs[i]->rfds[j],
+									EventManager::READ);
+			break;
+		case EventManager::WRITE:
+			for(i=0;i<(self->n);++i)
+				if(self->evs[i]->wfds)
+					for(j=0;self->evs[i]->wfds[j]>=0;++j)
+						if(FD_ISSET(self->evs[i]->wfds[j], &fds))
+							self->evs[i]->Callback(
+									self->root(self->evs[i]->name),
+									self->evs[i]->wfds[j],
+									EventManager::WRITE);
+			break;
+		case EventManager::EXCEPTION:
+			for(i=0;i<(self->n);++i)
+				if(self->evs[i]->efds)
+					for(j=0;self->evs[i]->efds[j]>=0;++j)
+						if(FD_ISSET(self->evs[i]->efds[j], &fds))
+							self->evs[i]->Callback(
+									self->root(self->evs[i]->name),
+									self->evs[i]->efds[j],
+									EventManager::EXCEPTION);
+			break;
+		case EventManager::TIMEOUT:
+			CallTimeout();
+			break;
+	};
 }

@@ -3,15 +3,19 @@
 	<cnproc type="exec" cmdline="nspluginviewer.*">
 		<cmd>echo nspluginviewer launched !</cmd>
 		<kill signal="9"/>
+		<cmd>I meant killed.</cmd>
 	</cnproc>
 
 	<cnproc type="exec" cmdline="mplayer .*" file="!/usr/bin/mplayer">
 		<ionice  class="realtime" priority="42"/>
 	</cnproc>
 
-	<cnproc type="exec" cmdline="updatedb">
+	<cnproc type="exec" cmdline="updatedb .*">
 		<ionice class="idle"/>
-		<cmd>echo updatedb launched</cmd>
+	</cnproc>
+
+	<cnproc type="exec" cmdline="prelink .*">
+		<ionice class="idle"/>
 	</cnproc>
 
 	<cnproc type="exec" file="!/usr/bin/msec_find">

@@ -1,9 +1,7 @@
 <?xml version="1.0"?>
 <root>
 	<cnproc type="exec" cmdline="nspluginviewer.*">
-		<cmd>echo nspluginviewer launched !</cmd>
 		<kill signal="9"/>
-		<cmd>I meant killed.</cmd>
 	</cnproc>
 
 	<cnproc type="exec" cmdline="mplayer .*" file="!/usr/bin/mplayer">
@@ -20,17 +18,17 @@
 
 	<cnproc type="exec" file="!/usr/bin/msec_find">
 		<ionice class="idle"/>
-		<cmd>echo msec_find launched</cmd>
+		<log>msec_find launched</log>
 	</cnproc>
 
 	<cnproc type="exec" file="!/usr/bin/rtorrent">
 		<ionice class="idle"/>
-		<cmd>echo rtorrent launched</cmd>
+		<log>rtorrent launched</log>
 	</cnproc>
 
 	<cnproc type="exec" cmdline=".*ioUrbanTerror.*">
-		<ionice class="idle"/>
-		<cmd>echo ioUrbanTerror launched</cmd>
+		<ionice class="realtime"/>
+		<log>ioUrbanTerror launched</log>
 	</cnproc>
 
 	<date hour="19" min="55" sec="00"><cmd>date;mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</cmd></date>
@@ -41,6 +39,6 @@
 	</inotify>
 
 	<uevent devtype="usb_device" vid="090c">
-		<cmd>echo OK</cmd>
+		<log>Usb device connected</log>
 	</uevent>
 </root>

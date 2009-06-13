@@ -128,6 +128,12 @@ void reloadCall(xmlNode arg, const context_t &ctx) {
 	reload=true;
 }
 
+void logCall(xmlNode arg, const context_t& context) {
+	if(!arg())
+		return;
+	fprintf(stderr, "%s\n", arg());
+}
+
 void Cmds::Update() {
 	if(cmds) {
 		int i;
@@ -147,5 +153,7 @@ void Cmds::Update() {
 	cmds[3].callback=cmdCall;
 	cmds[4].name=strdup("reload");
 	cmds[4].callback=reloadCall;
+	cmds[5].name=strdup("log");
+	cmds[5].callback=logCall;
 }
 

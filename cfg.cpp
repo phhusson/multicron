@@ -44,7 +44,7 @@ cfgNode::cfgNode(ezxml_t arg) {
 cfgNode::cfgNode(const char *path) {
 	ezxml_t node=ezxml_parse_file(path);
 	if(!node)
-		throw std::string("Can't access requested file ")+path;
+		throw "Can't access requested config file";
 	Fill(node->child);
 	ezxml_free(node);
 }
@@ -52,7 +52,7 @@ cfgNode::cfgNode(const char *path) {
 cfgNode::cfgNode(char *buf, int ln) {
 	ezxml_t node=ezxml_parse_str(buf, ln);
 	if(!node)
-		throw std::string("Can't parse this string");
+		throw "Can't parse this string";
 	Fill(node->child);
 	ezxml_free(node);
 }
@@ -60,7 +60,7 @@ cfgNode::cfgNode(char *buf, int ln) {
 cfgNode::cfgNode(int fd) {
 	ezxml_t node=ezxml_parse_fd(fd);
 	if(!node)
-		throw std::string("Can't parse this file");
+		throw "Can't parse this file";
 	Fill(node->child);
 	ezxml_free(node);
 }

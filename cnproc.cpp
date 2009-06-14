@@ -143,6 +143,10 @@ static void handle_msg (struct cn_msg *cn_hdr, cfgNode config)
 	
 	cfgNode node(config);
 	while(!!node) {
+		if(strcmp(node.getName(), "cnproc")!=0) {
+			++node;
+			continue;
+		}
 		const char *afile=node["file"];
 		if(afile)
 			if(!regexp_match(afile, file)) {
@@ -157,7 +161,7 @@ static void handle_msg (struct cn_msg *cn_hdr, cfgNode config)
 #endif
 		const char *match_cmd=node["cmdline"];
 		if(!match_cmd && !afile)
-			throw std::string("Wait... you want to match every processes ? I prefer saying no.");
+			throw "Wait... you want to match every processes ? I prefer saying no.";
 		if(match_cmd)
 			if(!regexp_match(match_cmd, cmdline)) {
 				++node;

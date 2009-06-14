@@ -41,4 +41,12 @@
 	<uevent devtype="usb_device" vid="090c">
 		<log>Usb device connected</log>
 	</uevent>
+
+	<uevent devtype="input" name="!Logitech Trackball">
+		<load mod="input">
+			<on key="42">
+				<log>PLOP</log>
+			</on>
+		</load>
+	</uevent>
 </root>

@@ -2,8 +2,11 @@ namespace UEvents {
 	class Event {
 		public:
 			virtual void SetVar(const char *name, const char *value) {};
-			virtual ~Event() { };
-			virtual bool Match(xmlNode) { return false;};
+			virtual ~Event() {
+				if(devpath) free(devpath);
+				if(subsys) free(subsys);
+			};
+			virtual bool Match(cfgNode) { return false;};
 
 			//Damn i hate letting these as public, but i can't see how to do otherwise
 			::UEvent::action_type action;

@@ -15,7 +15,7 @@
 
 #include <string>
 
-#include "xml.h"
+#include "cfg.h"
 #include "multicron.h"
 #include "commands.h"
 #include "uevent.h"
@@ -54,9 +54,10 @@ static int ueventInit() {
 	return fd;
 }
 
-void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	if(event_type==EventManager::TIMEOUT)
 		return;
+	cfgNode config(cfg);
 	(void)event_type;
 	char buffer[HOTPLUG_BUFFER_SIZE + OBJECT_SIZE];
 	int buflen;
@@ -132,15 +133,19 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 	}
 
 	printf("\n");
-	xmlNode node=config;
+	cfgNode node=config;
 	while(!!node) {
-		if(node["subsystem"]())
-			if(!regexp_match(node["subsystem"](), ev->subsys)) {
+		if(strcmp(node.getName(), name)!=0) {
+			++node;
+			continue;
+		}
+		if(node["subsystem"])
+			if(!regexp_match(node["subsystem"], ev->subsys)) {
 				++node;
 				continue;
 			}
-		if(node["devpath"]())
-			if(!regexp_match(node["devpath"](), ev->devpath)) {
+		if(node["devpath"])
+			if(!regexp_match(node["devpath"], ev->devpath)) {
 				++node;
 				continue;
 			}
@@ -160,7 +165,7 @@ void UEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
 	delete ev;
 }
 
-UEvent::UEvent() {
+UEvent::UEvent(cfgNode conf) : cfg(conf) {
 	rfds=(int*)malloc(sizeof(int)*2);
 	rfds[0]=ueventInit();
 	rfds[1]=-1;

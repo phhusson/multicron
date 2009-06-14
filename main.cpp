@@ -3,7 +3,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "xml.h"
+#include "cfg.h"
 #include "multicron.h"
 #include "cnproc.h"
 #include "inotify.h"
@@ -66,13 +66,13 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void EventManager::Callback(xmlNode config, int fd, ETYPE event_type) {
+void EventManager::Callback(int fd, ETYPE event_type) {
 }
 
-void EventManager::RefreshConfig(xmlNode config) {
+void EventManager::RefreshConfig() {
 }
 
-struct timeval EventManager::NextTimeout(xmlNode config) {
+struct timeval EventManager::NextTimeout() {
 	struct timeval tv;
 	tv.tv_sec=1e9;
 	tv.tv_usec=0;
@@ -109,7 +109,7 @@ void EventManager::AddFDs(fd_set &fds, ETYPE event_type, int &max) const {
 EventManager::~EventManager() {
 }
 
-MainLoop::MainLoop() : root(xmlNode("multicron.xml")) {
+MainLoop::MainLoop() : root(cfgNode("multicron.xml")) {
 	//Do nothing, everything is done in Reload();
 	//But needed for singleton
 	evs=NULL;
@@ -130,7 +130,7 @@ void MainLoop::Reload() {
 	Cmds::Update();
 	while(1) {
 		try {
-			self->root=xmlNode("multicron.xml");
+			self->root=cfgNode("multicron.xml");
 			break;
 		} catch(...) {
 			//Let vim/whatever enough time to write the file correctly
@@ -162,15 +162,15 @@ void MainLoop::Reload() {
 #endif
 #endif
 
-	AddEM(new InotifyEvent);
-	AddEM(new DateEvent);
+	AddEM(new InotifyEvent(self->root));
+	AddEM(new DateEvent(self->root));
 #ifndef BSD
-	AddEM(new CNProcEvent);
-	AddEM(new UEvent);
+	AddEM(new CNProcEvent(self->root));
+	AddEM(new UEvent(self->root));
 #endif
 	
 	for(i=0;self->evs[i];++i)
-		self->evs[i]->RefreshConfig(self->root(self->evs[i]->name));
+		self->evs[i]->RefreshConfig();
 }
 
 void MainLoop::AddEM(EventManager *ev) {
@@ -197,7 +197,7 @@ void MainLoop::NextTimeout(struct timeval &tv) {
 	tv.tv_sec=1e9;
 	tv.tv_usec=0;
 	for(i=0;i<(self->n);++i) {
-		tv2=self->evs[i]->NextTimeout(self->root(self->evs[i]->name));
+		tv2=self->evs[i]->NextTimeout();
 		if(tv2.tv_sec < tv.tv_sec) {
 			tv.tv_sec=tv2.tv_sec;
 			tv.tv_usec=tv2.tv_usec;
@@ -213,7 +213,7 @@ void MainLoop::CallTimeout() {
 	int i;
 	for(i=0;i<(self->n);++i)
 		self->evs[i]->Callback(
-				self->root(self->evs[i]->name),
+				/*self->evs[i]->cfg*/ /*(self->evs[i]->name),*/
 				-1,
 				EventManager::TIMEOUT);
 }
@@ -228,7 +228,7 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 					for(j=0;self->evs[i]->rfds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->rfds[j], &fds))
 							self->evs[i]->Callback(
-									self->root(self->evs[i]->name),
+									/*self->evs[i]->cfg*//*(self->evs[i]->name),*/
 									self->evs[i]->rfds[j],
 									EventManager::READ);
 			break;
@@ -238,7 +238,7 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 					for(j=0;self->evs[i]->wfds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->wfds[j], &fds))
 							self->evs[i]->Callback(
-									self->root(self->evs[i]->name),
+									/*self->evs[i]->cfg*//*(self->evs[i]->name),*/
 									self->evs[i]->wfds[j],
 									EventManager::WRITE);
 			break;
@@ -248,7 +248,7 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 					for(j=0;self->evs[i]->efds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->efds[j], &fds))
 							self->evs[i]->Callback(
-									self->root(self->evs[i]->name),
+									/*self->evs[i]->cfg*//*root(self->evs[i]->name),*/
 									self->evs[i]->efds[j],
 									EventManager::EXCEPTION);
 			break;

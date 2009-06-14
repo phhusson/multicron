@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
-#include "../xml.h"
+#include "../cfg.h"
 #include "../multicron.h"
 #include "../uevent.h"
 #include "uevent.h"

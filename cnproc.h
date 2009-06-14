@@ -1,8 +1,10 @@
 class CNProcEvent : public EventManager {
 	public:
-		CNProcEvent();
-		void Callback(xmlNode config, int fd, ETYPE event_type);
+		CNProcEvent(cfgNode conf);
+		void Callback(int fd, ETYPE event_type);
 	private:
+		CNProcEvent();
 		~CNProcEvent();
+		cfgNode cfg;
 };
 

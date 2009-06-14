@@ -5,14 +5,16 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <time.h>
-#include "xml.h"
+#include "cfg.h"
 #include "multicron.h"
 #include "date.h"
 #include "commands.h"
 
-DateEvent::DateEvent() {
+#define NAME "date"
+
+DateEvent::DateEvent(cfgNode conf) : cfg(conf) {
 	rfds=NULL;wfds=NULL;efds=NULL;
-	name=strdup("date");
+	name=strdup(NAME);
 	tasks=NULL;
 }
 
@@ -29,7 +31,7 @@ DateEvent::~DateEvent() {
 		free(name);
 }
 
-void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
+void DateEvent::Callback(int fd, ETYPE event_type) {
 	if(event_type!=TIMEOUT)
 		throw "Ouch, got a non-timeout event!";
 	if(!tasks)
@@ -46,7 +48,7 @@ void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
 		now.Display();
 #endif
 		if(tasks[i]->when<=now) {
-			xmlNode cur=tasks[i]->task;
+			cfgNode cur=tasks[i]->task;
 			Cmds::Call(cur, ctx);
 			delete tasks[i];
 			tasks[i]=new DateTask(cur);
@@ -54,7 +56,7 @@ void DateEvent::Callback(xmlNode config, int fd, ETYPE event_type) {
 	}
 }
 
-void DateEvent::RefreshConfig(xmlNode config) {
+void DateEvent::RefreshConfig() {
 	if(tasks) {
 		int i;
 		for(i=0;tasks[i];++i)
@@ -63,7 +65,12 @@ void DateEvent::RefreshConfig(xmlNode config) {
 	}
 	tasks=NULL;
 	int n=0;
+	cfgNode config(cfg);
 	while(!!config) {
+		if(strcmp(config.getName(), NAME)!=0) {
+			++config;
+			continue;
+		}
 		tasks=(DateTask**)realloc(tasks, sizeof(DateTask*)*(n+2));
 		tasks[n]=new DateTask(config);
 		++n;
@@ -72,7 +79,7 @@ void DateEvent::RefreshConfig(xmlNode config) {
 	tasks[n]=NULL;
 }
 
-struct timeval DateEvent::NextTimeout(xmlNode config) {
+struct timeval DateEvent::NextTimeout() {
 	Time min;
 	min.Add(10, Time::HOUR);
 	int i;
@@ -89,14 +96,14 @@ struct timeval DateEvent::NextTimeout(xmlNode config) {
 	return tv;
 }
 
-DateTask::DateTask(xmlNode config) 
+DateTask::DateTask(cfgNode config) 
  : task(config) {
 	//Here we parse the xml node to know how often to execute the commands
 	int hour=-1,min=-1,sec=-1,d;
 	bool got=false;
 	Time now;
-	if(config["hour"]()) {
-		hour=atoi(config["hour"]());
+	if(config["hour"]) {
+		hour=atoi(config["hour"]);
 		if(hour<0 || hour >=24)
 			throw "Unsupported hour (must be 0-23)";
 		d=(hour-when.toTm()->tm_hour)%24;
@@ -108,8 +115,8 @@ DateTask::DateTask(xmlNode config)
 		when.Add(d, Time::HOUR);
 	}
 
-	if(config["min"]()) {
-		min=atoi(config["min"]());
+	if(config["min"]) {
+		min=atoi(config["min"]);
 		if(min<0 || min >=60)
 			throw "Unsupported minute (must be 0-59)";
 		d=(min-when.toTm()->tm_min)%60;
@@ -121,8 +128,8 @@ DateTask::DateTask(xmlNode config)
 		when.Add(d, Time::MINUTE);
 	}
 
-	if(config["sec"]()) {
-		sec=atoi(config["sec"]());
+	if(config["sec"]) {
+		sec=atoi(config["sec"]);
 		if(sec<0 || sec >=60)
 			throw "Unsupported seconds (must be 0-59)";
 		d=(sec-when.toTm()->tm_sec)%60;
@@ -133,12 +140,14 @@ DateTask::DateTask(xmlNode config)
 		}
 		when.Add(d, Time::SECOND);
 	}
+	if(!got)
+		throw "Got no hour nor min nor sec in date";
 	if(when<=now) {
-		if(!config["min"]() && config["sec"]())
+		if(!config["min"] && config["sec"])
 			when.Add(1, Time::MINUTE);
-		else if(!config["hour"]() && config["min"]())
+		else if(!config["hour"] && config["min"])
 			when.Add(1, Time::HOUR);
-		else if(!config["day"]() && config["hour"]())
+		else if(!config["day"] && config["hour"])
 			when.Add(1, Time::DAY);
 	}
 #ifdef DEBUG

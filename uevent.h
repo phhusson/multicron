@@ -1,5 +1,6 @@
 class UEvent : public EventManager {
 	public:
+		UEvent(cfgNode conf);
 		enum action_type {
 			ADD,
 			REMOVE,
@@ -9,10 +10,10 @@ class UEvent : public EventManager {
 			OFFLINE,
 			UNKNOWN
 		};
-		UEvent();
-		void Callback(xmlNode config, int fd, ETYPE event_type);
+		void Callback(int fd, ETYPE event_type);
 		~UEvent();
 	private:
+		UEvent() { throw "No simple constructor"; };
 		struct uev {
 			action_type action;
 			char *s_action;
@@ -20,5 +21,6 @@ class UEvent : public EventManager {
 			char *subsys;
 			int seqnum;
 		};
+		cfgNode cfg;
 };
 

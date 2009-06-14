@@ -2,7 +2,7 @@ namespace UEvents {
 	class USB : public  Event {
 		public:
 			USB(UEvents::Event *ev);
-			bool Match(xmlNode);
+			bool Match(cfgNode);
 			USB();
 			~USB();
 			void SetVar(const char *name, const char *value);

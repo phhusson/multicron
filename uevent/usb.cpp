@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
-#include "../xml.h"
+#include "../cfg.h"
 #include "../multicron.h"
 #include "../uevent.h"
 #include "uevent.h"
@@ -73,21 +73,21 @@ void UEvents::USB::SetVar(const char *name, const char *value) {
 	}
 }
 
-bool UEvents::USB::Match(xmlNode config) {
-	if(config["vid"]()) {
+bool UEvents::USB::Match(cfgNode config) {
+	if(config["vid"]) {
 		char vid[6];//5 should be enough
 		sprintf(vid, "%04x", idVendor);
-		if(!regexp_match(config["vid"](), vid))
+		if(!regexp_match(config["vid"], vid))
 			return false;
 	}
-	if(config["pid"]()) {
+	if(config["pid"]) {
 		char pid[6];//5 should be enough
 		sprintf(pid, "%04x", idProduct);
-		if(!regexp_match(config["pid"](), pid))
+		if(!regexp_match(config["pid"], pid))
 			return false;
 	}
-	if(config["devtype"]())
-		if(!regexp_match(config["devtype"](), devtype))
+	if(config["devtype"])
+		if(!regexp_match(config["devtype"], devtype))
 			return false;
 	return true;
 }

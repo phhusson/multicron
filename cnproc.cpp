@@ -45,7 +45,7 @@
 
 #include <string>
 
-#include "xml.h"
+#include "cfg.h"
 #include "multicron.h"
 #include "commands.h"
 #include "cnproc.h"
@@ -89,7 +89,7 @@ enum {
 #define INTR_SIG SIGINT
 sigjmp_buf g_jmp;
 
-static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
+static void handle_msg (struct cn_msg *cn_hdr, cfgNode config)
 {
 	char cmdline[1024], fname1[1024], fname2[1024], file[1024];
 	int cmdline_sz, fd, i;
@@ -141,9 +141,9 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 	if(ev->what!=PROC_EVENT_EXEC)
 		return;
 	
-	xmlNode node(config);
+	cfgNode node(config);
 	while(!!node) {
-		const char *afile=node["file"]();
+		const char *afile=node["file"];
 		if(afile)
 			if(!regexp_match(afile, file)) {
 #ifdef DEBUG
@@ -155,7 +155,7 @@ static void handle_msg (struct cn_msg *cn_hdr, xmlNode config)
 #ifdef DEBUG
 		printf("Matched file:%s\n", file);
 #endif
-		const char *match_cmd=node["cmdline"]();
+		const char *match_cmd=node["cmdline"];
 		if(!match_cmd && !afile)
 			throw std::string("Wait... you want to match every processes ? I prefer saying no.");
 		if(match_cmd)
@@ -252,7 +252,7 @@ int cnprocInit() {
 	return sk_nl;
 }
 
-void CNProcEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+void CNProcEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	if(event_type==EventManager::TIMEOUT)
 		return;
 	(void)fd;
@@ -279,14 +279,14 @@ void CNProcEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_typ
 		if ((nlh->nlmsg_type == NLMSG_ERROR) ||
 		    (nlh->nlmsg_type == NLMSG_OVERRUN))
 			break;
-		handle_msg(cn_hdr, config);
+		handle_msg(cn_hdr, cfg);
 		if (nlh->nlmsg_type == NLMSG_DONE)
 			break;
 		nlh = NLMSG_NEXT(nlh, recv_len);
 	}
 }
 
-CNProcEvent::CNProcEvent() {
+CNProcEvent::CNProcEvent(cfgNode conf) : cfg(conf) {
 	rfds=(int*)malloc(sizeof(int)*2);
 	rfds[0]=cnprocInit();
 	rfds[1]=-1;

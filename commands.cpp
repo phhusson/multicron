@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include "xml.h"
+#include "cfg.h"
 #include "commands.h"
 #include <string>
 #include <string.h>
@@ -40,23 +40,27 @@ void fill_context(context_t &ctx) {
 		ctx.pid=getpid();
 }
 
-void Cmds::Call(const xmlNode& arg, context_t context) {
+void Cmds::Call(const cfgNode& arg, context_t context) {
 	fill_context(context);
-	int i=0;
-	while(cmds[i].name!=NULL) {
-		xmlNode t(arg(cmds[i].name));
-		while(!!t) {
-			cmds[i].callback(t, context);
-			++t;
+	int i;
+	cfgNode t(arg);
+	t=t.getChild();
+	while(!!t) {
+		for(i=0;cmds[i].name!=NULL;++i) {
+			if(strcmp(cmds[i].name, t.getName())==0) {
+
+				cmds[i].callback(t, context);
+				break;
+			}
 		}
-		i++;
+		++t;
 	}
 }
 
-void ioniceCall(const xmlNode& arg, const context_t& context) {
+void ioniceCall(const cfgNode& arg, const context_t& context) {
 	printf("ionice called\n");
 #ifndef BSD
-	const char *nice_class=arg["class"]();
+	const char *nice_class=arg["class"];
 	int ioprio;
 	if(!nice_class)
 		ioprio=IOPRIO_CLASS_BE;
@@ -66,7 +70,7 @@ void ioniceCall(const xmlNode& arg, const context_t& context) {
 		ioprio=IOPRIO_CLASS_IDLE;
 	else
 		ioprio=IOPRIO_CLASS_BE;
-	const char *prio=arg["priority"]();
+	const char *prio=arg["priority"];
 	if(prio) {
 		int a=atoi(prio);
 		if(a<0 || a>7)
@@ -81,19 +85,19 @@ void ioniceCall(const xmlNode& arg, const context_t& context) {
 #endif
 }
 
-void cpuniceCall(const xmlNode& arg, const context_t& context) {
+void cpuniceCall(const cfgNode& arg, const context_t& context) {
 	printf("cpunice called\n");
 }
 
-void killCall(const xmlNode& arg, const context_t& context) {
+void killCall(const cfgNode& arg, const context_t& context) {
 	printf("kill called\n");
-	const char *sig=arg["signal"]();
+	const char *sig=arg["signal"];
 	int sigid;
 	if(sig!=NULL)
 		sigid=atoi(sig);
 	else
 		sigid=10;//SIGUSR1
-	const char *pid=arg["pid"]();
+	const char *pid=arg["pid"];
 	int p;
 	if(pid)
 		p=atoi(pid);
@@ -105,7 +109,7 @@ void killCall(const xmlNode& arg, const context_t& context) {
 	}
 }
 
-void cmdCall(const xmlNode& arg, const context_t& context) {
+void cmdCall(const cfgNode& arg, const context_t& context) {
 	if(arg()) {
 		int pid=fork();
 		if(pid>0)
@@ -124,11 +128,11 @@ void cmdCall(const xmlNode& arg, const context_t& context) {
 }
 
 extern bool reload;
-void reloadCall(const xmlNode& arg, const context_t &ctx) {
+void reloadCall(const cfgNode& arg, const context_t &ctx) {
 	reload=true;
 }
 
-void logCall(xmlNode arg, const context_t& context) {
+void logCall(const cfgNode& arg, const context_t& context) {
 	if(!arg())
 		return;
 	fprintf(stderr, "%s\n", arg());

@@ -23,18 +23,20 @@ class Time {
 class DateTask {
 	friend class DateEvent;
 	private:
-		DateTask(xmlNode);
+		DateTask(cfgNode);
 		Time when;
-		xmlNode task;
+		cfgNode task;
 };
 
 class DateEvent : public EventManager {
 	public:
-		DateEvent();
-		void Callback(xmlNode config, int fd, ETYPE event_type);
-		struct timeval NextTimeout(xmlNode config);
-		void RefreshConfig(xmlNode config);
+		DateEvent(cfgNode conf);
+		void Callback(int fd, ETYPE event_type);
+		struct timeval NextTimeout();
+		void RefreshConfig();
 		~DateEvent();
 	private:
+		DateEvent() { throw "No simple constructor allowed"; };
 		DateTask **tasks;
+		cfgNode cfg;
 };

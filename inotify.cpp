@@ -1,5 +1,5 @@
 #include <iostream>
-#include "xml.h"
+#include "cfg.h"
 #include "multicron.h"
 #include "inotify.h"
 #ifndef BSD
@@ -21,7 +21,9 @@
 #include "commands.h"
 
 #define ALLOC_STEP 5
-InotifyEvent::InotifyEvent() {
+#define NAME "inotify"
+InotifyEvent::InotifyEvent(cfgNode conf)
+	: cfg(conf) {
 	rfds=(int*)malloc(sizeof(int)*2);
 #ifdef BSD
 	rfds[0]=kqueue();
@@ -34,10 +36,14 @@ InotifyEvent::InotifyEvent() {
 	wfds=NULL;
 	efds=NULL;
 
-	name=strdup("inotify");
+	name=strdup(NAME);
 	inotify_files=(inotify_file*)malloc(sizeof(inotify_file)*ALLOC_STEP);
 	memset(inotify_files, 0, sizeof(inotify_file)*ALLOC_STEP);
 	n=0;
+}
+
+InotifyEvent::InotifyEvent() {
+	throw "This shouldn't happen.";
 }
 
 InotifyEvent::~InotifyEvent() {
@@ -54,10 +60,17 @@ InotifyEvent::~InotifyEvent() {
 		free(name);
 }
 
-void InotifyEvent::RefreshConfig(xmlNode config) {
+void InotifyEvent::RefreshConfig() {
 	int inotify=rfds[0];
+	cfgNode config(cfg);
 	while(!!config) {
-		char *file=strdup(config["folder"]());
+		if(strcmp(config.getName(), NAME)!=0) {
+			++config;
+			continue;
+		}
+		if(!config["folder"])
+			throw "Inotify need to know in which folder to wait";
+		char *file=strdup(config["folder"]);
 		if( file[strlen(file)-1]=='/')
 			file[strlen(file)-1]=0;
 		int ret;
@@ -111,7 +124,7 @@ void InotifyEvent::RefreshConfig(xmlNode config) {
 }
 
 #ifdef BSD
-void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+void InotifyEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	if(event_type==EventManager::TIMEOUT)
 		return;
 	struct kevent ev;
@@ -124,7 +137,7 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 
 
 	inotify_file file=inotify_files[(int)ev.udata];
-	xmlNode node=config;
+	cfgNode node=cfg;
 	while(!!node) {
 		char *folder=strdup(node["folder"]());
 		if(folder[strlen(folder)-1]=='/')
@@ -168,7 +181,7 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 	}
 }
 #else
-void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_type) {
+void InotifyEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	if(event_type==EventManager::TIMEOUT)
 		return;
 	char buffer[4096];
@@ -207,10 +220,14 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 		}
 		asprintf(&path, "%s/%s", inotify_files[j].filename, name);
 
-		xmlNode node(config);
+		cfgNode node(cfg);
 		char *filename=inotify_files[j].filename;
 		while(!!node) {
-			char *folder=strdup(node["folder"]());
+			if(strcmp(node.getName(), "inotify")!=0) {
+				++node;
+				continue;
+			}
+			char *folder=strdup(node["folder"]);
 			if(folder[strlen(folder)-1]=='/')
 				folder[strlen(folder)-1]=0;
 			struct context ctx;
@@ -218,9 +235,9 @@ void InotifyEvent::Callback(xmlNode config, int fd, EventManager::ETYPE event_ty
 			ctx.pid=0;
 			ctx.file=path;
 			if(strcmp(folder, filename)==0) {
-				if(!node["file"]()) 
+				if(!node["file"]) 
 					Cmds::Call(node, ctx);
-				else if(regexp_match(node["file"](), name))
+				else if(regexp_match(node["file"], name))
 					Cmds::Call(node, ctx);
 			}
 			free(folder);

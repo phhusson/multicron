@@ -9,12 +9,13 @@ class EventManager {
 		};
 
 		int *rfds,*wfds,*efds;
-		virtual void Callback(xmlNode config, int fd, ETYPE event_type);
-		virtual void RefreshConfig(xmlNode config);
-		virtual struct timeval NextTimeout(xmlNode config);
+		virtual void Callback(int fd, ETYPE event_type);
+		virtual void RefreshConfig();
+		virtual struct timeval NextTimeout();
 		virtual void AddFDs(fd_set &fds, ETYPE event_type, int &max) const;
 		char *name;
 		virtual ~EventManager();
+
 };
 
 class MainLoop {
@@ -29,7 +30,7 @@ class MainLoop {
 	private:
 		MainLoop();
 		EventManager **evs;
-		xmlNode root;
+		cfgNode root;
 		int n;
 
 };

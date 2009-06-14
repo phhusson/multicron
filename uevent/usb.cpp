@@ -38,12 +38,18 @@ void UEvents::USB::Zero() {
 
 UEvents::USB::~USB() {
 	Display();
-	if(devpath)
+	if(devpath) {
 		free(devpath);
-	if(subsys)
+		devpath=NULL;
+	}
+	if(subsys) {
 		free(subsys);
-	if(devtype)
+		subsys=NULL;
+	}
+	if(devtype) {
 		free(devtype);
+		devtype=NULL;
+	}
 }
 
 void UEvents::USB::SetVar(const char *name, const char *value) {

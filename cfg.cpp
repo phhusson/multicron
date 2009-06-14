@@ -118,10 +118,6 @@ const char *cfgNode::operator()() const {
 }
 
 void cfgNode::operator++() {
-	if(!next) {
-		Fill(NULL);
-		return;
-	}
 	int i=0;
 	if(attrs) {
 		for(i=0; attrs[i]!=NULL; ++i) {
@@ -133,6 +129,10 @@ void cfgNode::operator++() {
 	}
 	free(value);
 	free(name);
+	if(!next) {
+		Fill(NULL);
+		return;
+	}
 
 	attrs=(char**)malloc(2*sizeof(char*));
 	for(i=0; (next->attrs)[i]!=0;  ++i) {

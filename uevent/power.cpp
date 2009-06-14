@@ -20,14 +20,14 @@ static const char *technology_text[] = {
 static const char *type_text[] = { "Battery", "UPS", "Mains", "USB" };
 
 UEvents::Power::Power(UEvents::Event *ev) {
-	subsys=ev->subsys;//Well, it will be power_supply... I hope.
+	subsys=strdup(ev->subsys);//Well, it will be power_supply... I hope.
 	if(strcmp(subsys, "power_supply")!=0)
 		throw "UEvents::Power constructor for non power_supply subsystem";
-	devpath=ev->devpath;
+	devpath=strdup(ev->devpath);
 	seqnum=ev->seqnum;
 	action=ev->action;
 
-	name=NULL;
+	power_name=NULL;
 	//type= ?
 	status=UNKNOWN_STATUS;
 	technology=UNKNOWN_TECHNOLOGY;
@@ -48,7 +48,7 @@ UEvents::Power::Power() {
 	seqnum=-1;
 	action=::UEvent::UNKNOWN;
 
-	name=NULL;
+	power_name=NULL;
 	//type= ?
 	status=UNKNOWN_STATUS;
 	technology=UNKNOWN_TECHNOLOGY;
@@ -65,20 +65,28 @@ UEvents::Power::Power() {
 
 UEvents::Power::~Power() {
 	Display();
-	if(name)
-		free(name);
-	if(model_name)
+	if(power_name) {
+		free(power_name);
+		power_name=NULL;
+	}
+	if(model_name) {
 		free(model_name);
-	if(manufacturer)
+		model_name=NULL;
+	}
+	if(manufacturer) {
 		free(manufacturer);
-	if(serialnum)
+		manufacturer=NULL;
+	}
+	if(serialnum) {
 		free(serialnum);
+		serialnum=NULL;
+	}
 }
 
 void UEvents::Power::SetVar(const char *name, const char *value) {
 	unsigned int i;
 	if(strcmp(name, "POWER_SUPPLY_NAME")==0) {
-		name=strdup(value);
+		power_name=strdup(value);
 	} else if(strcmp(name, "POWER_SUPPLY_TYPE")==0) {
 		for(i=0;i<(sizeof(type_text)/sizeof(*type_text));i++)
 			if(strcmp(type_text[i], value)==0)

@@ -123,7 +123,6 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 			}
 			value[0]=0;
 			value++;
-			printf("SetVar(%s, %s)\n", name, value);
 			ev->SetVar(name, value);
 			while(buffer[tot]!=0) ++tot;//Move twice as we added a new \0
 			++tot;
@@ -158,7 +157,6 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		struct context ctx;
 		bzero(&ctx, sizeof(ctx));
 		//uevent infos would be usefull
-		//ctx.uev=uev;
 		Cmds::Call(node, ctx);
 		++node;
 	}
@@ -178,7 +176,10 @@ UEvent::UEvent(cfgNode conf) : cfg(conf) {
 UEvent::~UEvent() {
 	if(rfds) {
 		free(rfds);
+		rfds=NULL;
 	}
-	if(name)
+	if(name) {
 		free(name);
+		name=NULL;
+	}
 }

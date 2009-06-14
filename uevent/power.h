@@ -8,7 +8,7 @@ namespace UEvents {
 			void Display();
 		private:
 			//Informations comes from linux 2.6.30-rc6 drivers/power/power_supply_sysfs.c
-			char *name;//POWER_supply_name
+			char *power_name;//POWER_supply_name
 
 			enum power_type {
 				BATTERY,

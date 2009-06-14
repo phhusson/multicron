@@ -1,3 +1,9 @@
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
 class EventManager {
 
 	public:
@@ -23,6 +29,7 @@ class MainLoop {
 		static MainLoop *Get(); //Singleton, maybe private method ?
 		static void Reload();
 		static void AddEM(EventManager *ev);
+		static void DelEM(EventManager *ev);
 		static void AddFDs(fd_set &fds, EventManager::ETYPE event_type, int &max);
 		static void NextTimeout(struct timeval &tv);
 		static void Callback(const fd_set& fds, EventManager::ETYPE event_type);

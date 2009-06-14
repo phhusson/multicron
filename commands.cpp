@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #include "cfg.h"
+#include "multicron.h"
 #include "commands.h"
+#include "input.h"
 #include <string>
 #include <string.h>
 #include <unistd.h>
@@ -138,6 +140,20 @@ void logCall(const cfgNode& arg, const context_t& context) {
 	fprintf(stderr, "%s\n", arg());
 }
 
+void loadCall(const cfgNode& arg, const context_t& context) {
+	cfgNode conf(arg);
+	char *str;
+	asprintf(&str, "%d", context.pid);
+	conf.addAttr("pid", str);
+	free(str);
+	conf.addAttr("file", context.file);
+	conf.addAttr("devpath", context.devpath);
+	if(strcmp(arg.getName(), "input")==0) {
+		MainLoop::AddEM(new InputEvent(conf));
+	} else
+		throw "Unsupported load module";
+}
+
 void Cmds::Update() {
 	if(cmds) {
 		int i;
@@ -159,5 +175,7 @@ void Cmds::Update() {
 	cmds[4].callback=reloadCall;
 	cmds[5].name=strdup("log");
 	cmds[5].callback=logCall;
+	cmds[6].name=strdup("load");
+	cmds[6].callback=loadCall;
 }
 

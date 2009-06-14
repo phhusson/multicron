@@ -109,7 +109,7 @@ void EventManager::AddFDs(fd_set &fds, ETYPE event_type, int &max) const {
 EventManager::~EventManager() {
 }
 
-MainLoop::MainLoop() : root(cfgNode("multicron.xml")) {
+MainLoop::MainLoop() : root(cfgNode()) {
 	//Do nothing, everything is done in Reload();
 	//But needed for singleton
 	evs=NULL;
@@ -138,8 +138,10 @@ void MainLoop::Reload() {
 		}
 	}
 	if(self->evs) {
-		for(i=0;self->evs[i];++i)
-			delete self->evs[i];
+		for(i=0;i<(self->n);++i) {
+			if(self->evs[i])
+				delete self->evs[i];
+		}
 		free(self->evs);
 	}
 	self->n=0;
@@ -169,25 +171,52 @@ void MainLoop::Reload() {
 	AddEM(new UEvent(self->root));
 #endif
 	
-	for(i=0;self->evs[i];++i)
-		self->evs[i]->RefreshConfig();
+	for(i=0;i<(self->n);++i)
+		if(self->evs[i])
+			self->evs[i]->RefreshConfig();
 }
 
 void MainLoop::AddEM(EventManager *ev) {
 	if(ev==NULL)
 		throw "Want to add a null event manager";
 	MainLoop *self=Get();
-	self->evs=(EventManager**)realloc(self->evs, (self->n+2)*sizeof(EventManager*));
-	self->evs[self->n+1]=NULL;
-	self->evs[self->n]=ev;
-	++(self->n);
+	int i;
+	//Is there place before the end?
+	for(i=0;self->evs && self->evs[i];++i);
+	if(i>=(self->n)) {
+		//No ? Ok then make some
+		self->evs=(EventManager**)realloc(self->evs, (self->n+2)*sizeof(EventManager*));
+		self->evs[self->n+1]=NULL;
+		self->evs[self->n]=ev;
+		++(self->n);
+	} else {
+		//Yes ? then use it.
+		self->evs[i]=ev;
+	}
+}
+
+void MainLoop::DelEM(EventManager *ev) {
+	if(ev==NULL)
+		throw "Want to delete a null event manager";
+	MainLoop *self=Get();
+	int i;
+	for(i=0;i<(self->n);++i) {
+		if(ev==self->evs[i]) {
+			self->evs[i]=NULL;
+			delete ev;
+			return;
+		}
+	}
+	throw "Couldn't match wanteed Event";
 }
 
 void MainLoop::AddFDs(fd_set &fds, EventManager::ETYPE event_type,  int &max) {
 	MainLoop *self=Get();
 	int i;
-	for(i=0;i<(self->n); ++i) 
-		self->evs[i]->AddFDs(fds, event_type, max);
+	for(i=0;i<(self->n); ++i) {
+		if(self->evs[i])
+			self->evs[i]->AddFDs(fds, event_type, max);
+	}
 }
 
 void MainLoop::NextTimeout(struct timeval &tv) {
@@ -197,6 +226,8 @@ void MainLoop::NextTimeout(struct timeval &tv) {
 	tv.tv_sec=1e9;
 	tv.tv_usec=0;
 	for(i=0;i<(self->n);++i) {
+		if(!self->evs[i])
+			continue;
 		tv2=self->evs[i]->NextTimeout();
 		if(tv2.tv_sec < tv.tv_sec) {
 			tv.tv_sec=tv2.tv_sec;
@@ -211,11 +242,11 @@ void MainLoop::NextTimeout(struct timeval &tv) {
 void MainLoop::CallTimeout() {
 	MainLoop *self=Get();
 	int i;
-	for(i=0;i<(self->n);++i)
-		self->evs[i]->Callback(
-				/*self->evs[i]->cfg*/ /*(self->evs[i]->name),*/
-				-1,
-				EventManager::TIMEOUT);
+	for(i=0;i<(self->n);++i) {
+		if(!self->evs[i])
+			continue;
+		self->evs[i]->Callback(-1, EventManager::TIMEOUT);
+	}
 }
 
 void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
@@ -223,18 +254,17 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 	int i,j;
 	switch(event_type) {
 		case EventManager::READ:
-			for(i=0;self->evs[i];++i)
-				if(self->evs[i]->rfds)
+			for(i=0;i<(self->n);++i)
+				if(self->evs[i] && self->evs[i]->rfds)
 					for(j=0;self->evs[i]->rfds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->rfds[j], &fds))
 							self->evs[i]->Callback(
-									/*self->evs[i]->cfg*//*(self->evs[i]->name),*/
 									self->evs[i]->rfds[j],
 									EventManager::READ);
 			break;
 		case EventManager::WRITE:
 			for(i=0;i<(self->n);++i)
-				if(self->evs[i]->wfds)
+				if(self->evs[i] && self->evs[i]->wfds)
 					for(j=0;self->evs[i]->wfds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->wfds[j], &fds))
 							self->evs[i]->Callback(
@@ -244,7 +274,7 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 			break;
 		case EventManager::EXCEPTION:
 			for(i=0;i<(self->n);++i)
-				if(self->evs[i]->efds)
+				if(self->evs[i] && self->evs[i]->efds)
 					for(j=0;self->evs[i]->efds[j]>=0;++j)
 						if(FD_ISSET(self->evs[i]->efds[j], &fds))
 							self->evs[i]->Callback(

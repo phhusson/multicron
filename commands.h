@@ -1,6 +1,7 @@
 struct context{
 	pid_t pid;
 	char *file;
+	char *devpath;
 };
 
 typedef struct context context_t;

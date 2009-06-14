@@ -80,27 +80,6 @@ const char *cfgNode::operator()() const {
 	return value;
 }
 
-/*
- * Banned functions (herited from ezxml)
-cfgNode cfgNode::operator[](int arg) const {
-	ezxml_t tmp=node;
-	while( (arg--)>0 ) {
-		if(tmp==NULL)
-			return cfgNode((ezxml_t)NULL);
-		tmp=tmp->next;
-	}
-	if(tmp==NULL)
-		return cfgNode((ezxml_t)NULL);
-	return cfgNode(tmp);
-}
-
-cfgNode cfgNode::operator()(const char* name) const {
-	ezxml_t tree=ezxml_child(node, name);
-	return cfgNode(tree);
-}
-
-*/
-
 void cfgNode::operator++() {
 	if(!next) {
 		name=NULL;

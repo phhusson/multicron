@@ -17,12 +17,6 @@ class cfgNode {
 		const char *getName() { return name; };
 		cfgNode getChild() { if(child) return *child; return cfgNode(); };
 
-#if DEPRECATED
-		//Theses functions behaviour is specific to ezxml, please don't rely on it
-		cfgNode operator[](int);
-		cfgNode operator()(const char *);
-#endif
-
 		//Warning: dangerous function.
 		void Free();
 	private:

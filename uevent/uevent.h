@@ -11,6 +11,7 @@ namespace UEvents {
 				if(subsys) { free(subsys);subsys=NULL;}
 			};
 			virtual bool Match(cfgNode) { return false;};
+			virtual void FillCtx(struct context &ctx) { };
 
 			//Damn i hate letting these as public, but i can't see how to do otherwise
 			::UEvent::action_type action;

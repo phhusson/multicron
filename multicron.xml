@@ -42,7 +42,7 @@
 		<log>Usb device connected</log>
 	</uevent>
 
-	<uevent devtype="input" name="!Logitech Trackball">
+	<uevent name="Jing-Mold.*">
 		<load mod="input">
 			<on key="42">
 				<log>PLOP</log>

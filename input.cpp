@@ -9,6 +9,7 @@ InputEvent::InputEvent(cfgNode conf) : cfg(conf) {
 	wfds=NULL;
 	efds=NULL;
 	name=strdup("input");
+	printf("devpath=%s\n", cfg["devpath"]);
 }
 
 void InputEvent::Callback(int fd, ETYPE event_type) {

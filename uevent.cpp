@@ -22,6 +22,7 @@
 #include "uevent/uevent.h"
 #include "uevent/power.h"
 #include "uevent/usb.h"
+#include "uevent/input.h"
 
 #define HOTPLUG_BUFFER_SIZE             1024
 #define HOTPLUG_NUM_ENVP                32
@@ -106,6 +107,10 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 				UEvents::Event *tmp=ev;
 				ev=new UEvents::USB(tmp);
 				delete tmp;
+			} else if(strcmp(ev->subsys, "input")==0) {
+				UEvents::Event *tmp=ev;
+				ev=new UEvents::Input(tmp);
+				delete tmp;
 			} else {
 				printf("Unsupported subsys\n");
 			}
@@ -156,6 +161,7 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		//if(node["action"]())
 		struct context ctx;
 		bzero(&ctx, sizeof(ctx));
+		ev->FillCtx(ctx);
 		//uevent infos would be usefull
 		Cmds::Call(node, ctx);
 		++node;

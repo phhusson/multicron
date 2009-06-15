@@ -148,7 +148,7 @@ void loadCall(const cfgNode& arg, const context_t& context) {
 	free(str);
 	conf.addAttr("file", context.file);
 	conf.addAttr("devpath", context.devpath);
-	if(strcmp(arg.getName(), "input")==0) {
+	if(strcmp(arg["mod"], "input")==0) {
 		MainLoop::AddEM(new InputEvent(conf));
 	} else
 		throw "Unsupported load module";

@@ -80,6 +80,7 @@ void UEvents::USB::SetVar(const char *name, const char *value) {
 }
 
 bool UEvents::USB::Match(cfgNode config) {
+	printf("%s\n", config.getName());
 	if(config["vid"]) {
 		char vid[6];//5 should be enough
 		sprintf(vid, "%04x", idVendor);

@@ -207,7 +207,10 @@ void cfgNode::addAttr(const char *name, const char *value) {
 	if( (i%2)==1)
 		throw "First nil attr is not a name!";
 	attrs[i]=strdup(name);
-	attrs[i+1]=strdup(value);
+	if(value)
+		attrs[i+1]=strdup(value);
+	else
+		attrs[i+1]=strdup("");
 	attrs[i+2]=NULL;
 	attrs[i+3]=NULL;
 }

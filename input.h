@@ -6,6 +6,7 @@ class InputEvent : public EventManager {
 		struct timeval NextTimeout();
 		~InputEvent();
 	private:
+		void CheckForEvent();
 		InputEvent();
 		cfgNode cfg;
 };

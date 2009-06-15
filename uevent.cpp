@@ -67,8 +67,8 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	while(buffer[tot]!=0) ++tot;
 	++tot;
 
-	printf("\n");
 	UEvents::Event *ev=new UEvents::Event;
+	char *action_name=NULL;
 	while(tot<buflen) {
 #define ACT "ACTION="
 		//Ignore "invalid" (mostly sent by udevd) messages
@@ -77,6 +77,7 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		printf("%s\n", buffer+tot);
 		if(strncmp(buffer+tot, ACT, strlen(ACT))==0) {
 			char *type=buffer+tot+strlen(ACT);
+			action_name=strdup(type);
 			if(strcmp(type, "add")==0)
 				ev->action=UEvent::ADD;
 			else if(strcmp(type, "remove")==0)
@@ -136,7 +137,6 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		++tot;
 	}
 
-	printf("\n");
 	cfgNode node=config;
 	while(!!node) {
 		if(strcmp(node.getName(), name)!=0) {
@@ -148,8 +148,15 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 				++node;
 				continue;
 			}
+		if(!node["subsystem"])
+			throw "No subsystem attribute for uevent ? Are you crazy?";
 		if(node["devpath"])
 			if(!regexp_match(node["devpath"], ev->devpath)) {
+				++node;
+				continue;
+			}
+		if(node["action"])
+			if(!regexp_match(node["action"], action_name)) {
 				++node;
 				continue;
 			}
@@ -157,8 +164,6 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 			++node;
 			continue;
 		}
-		//TODO
-		//if(node["action"]())
 		struct context ctx;
 		bzero(&ctx, sizeof(ctx));
 		ev->FillCtx(ctx);
@@ -166,6 +171,7 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		Cmds::Call(node, ctx);
 		++node;
 	}
+	free(action_name);
 	delete ev;
 }
 

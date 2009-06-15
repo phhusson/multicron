@@ -11,7 +11,7 @@ UEvents::Input::Input(UEvents::Event *ev) {
 	Zero();
 	subsys=strdup(ev->subsys);//Well, it will be input... I hope.
 	if(strcmp(subsys, "input")!=0)
-		throw "UEvents::Input constructor for non usb subsystem";
+		throw "UEvents::Input constructor for non input subsystem";
 	devpath=strdup(ev->devpath);
 	seqnum=ev->seqnum;
 	action=ev->action;
@@ -56,12 +56,14 @@ UEvents::Input::~Input() {
 	}
 }
 
-void UEvents::Input::SetVar(const char *name, const char *value) {
-	if(strcmp(name, "NAME")==0) {
-		name=strdup(value);
-	} else if(strcmp(name, "PHYS")==0) {
-		phys=strdup(value);
-	} else if(strcmp(name, "PRODUCT")==0) {
+void UEvents::Input::SetVar(const char *arg_name, const char *value) {
+	if(strcmp(arg_name, "NAME")==0) {
+		name=strdup(value+1);
+		name[strlen(value)-2]=0;
+	} else if(strcmp(arg_name, "PHYS")==0) {
+		phys=strdup(value+1);
+		phys[strlen(value)-2]=0;
+	} else if(strcmp(arg_name, "PRODUCT")==0) {
 		product=strdup(value);
 	}
 }
@@ -80,9 +82,14 @@ bool UEvents::Input::Match(cfgNode config) {
 }
 
 void UEvents::Input::Display() {
+	printf("%s:%s:%d\n", __FILE__, __FUNCTION__, __LINE__);
 	printf("product=%s\n", product);
+	printf("name=%s\n", name);
+	printf("phys=%s\n", phys);
+	printf("\n");
 }
 
 void UEvents::Input::FillCtx(struct context &ctx) {
+	printf("Called FillCtx!\n");
 	ctx.devpath=strdup(devpath);
 }

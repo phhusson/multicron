@@ -203,6 +203,7 @@ void cfgNode::Free() {
 void cfgNode::addAttr(const char *name, const char *value) {
 	int i;
 	for(i=0;attrs[i];++i);
+	printf("Set %s=%s\n", name, value);
 	attrs=(char**)realloc(attrs, (i+4)*sizeof(char*));
 	if( (i%2)==1)
 		throw "First nil attr is not a name!";

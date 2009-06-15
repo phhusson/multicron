@@ -255,32 +255,29 @@ void MainLoop::Callback(const fd_set &fds, EventManager::ETYPE event_type) {
 	switch(event_type) {
 		case EventManager::READ:
 			for(i=0;i<(self->n);++i)
-				if(self->evs[i] && self->evs[i]->rfds)
-					for(j=0;self->evs[i]->rfds[j]>=0;++j)
-						if(FD_ISSET(self->evs[i]->rfds[j], &fds))
-							self->evs[i]->Callback(
-									self->evs[i]->rfds[j],
-									EventManager::READ);
+				for(j=0;self->evs[i] && self->evs[i]->rfds && self->evs[i]->rfds[j]>=0;++j)
+					if(FD_ISSET(self->evs[i]->rfds[j], &fds))
+						self->evs[i]->Callback(
+								self->evs[i]->rfds[j],
+								EventManager::READ);
 			break;
 		case EventManager::WRITE:
 			for(i=0;i<(self->n);++i)
-				if(self->evs[i] && self->evs[i]->wfds)
-					for(j=0;self->evs[i]->wfds[j]>=0;++j)
-						if(FD_ISSET(self->evs[i]->wfds[j], &fds))
-							self->evs[i]->Callback(
-									/*self->evs[i]->cfg*//*(self->evs[i]->name),*/
-									self->evs[i]->wfds[j],
-									EventManager::WRITE);
+				for(j=0;self->evs[i] && self->evs[i]->wfds && self->evs[i]->wfds[j]>=0;++j)
+					if(FD_ISSET(self->evs[i]->wfds[j], &fds))
+						self->evs[i]->Callback(
+								/*self->evs[i]->cfg*//*(self->evs[i]->name),*/
+								self->evs[i]->wfds[j],
+								EventManager::WRITE);
 			break;
 		case EventManager::EXCEPTION:
 			for(i=0;i<(self->n);++i)
-				if(self->evs[i] && self->evs[i]->efds)
-					for(j=0;self->evs[i]->efds[j]>=0;++j)
-						if(FD_ISSET(self->evs[i]->efds[j], &fds))
-							self->evs[i]->Callback(
-									/*self->evs[i]->cfg*//*root(self->evs[i]->name),*/
-									self->evs[i]->efds[j],
-									EventManager::EXCEPTION);
+				for(j=0;self->evs[i] && self->evs[i]->efds && self->evs[i]->efds[j]>=0;++j)
+					if(FD_ISSET(self->evs[i]->efds[j], &fds))
+						self->evs[i]->Callback(
+								/*self->evs[i]->cfg*//*root(self->evs[i]->name),*/
+								self->evs[i]->efds[j],
+								EventManager::EXCEPTION);
 			break;
 		case EventManager::TIMEOUT:
 			CallTimeout();

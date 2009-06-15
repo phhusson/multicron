@@ -38,15 +38,31 @@
 		<reload/>
 	</inotify>
 
-	<uevent devtype="usb_device" vid="090c">
+	<uevent devtype="usb_device" vid="090c" subsystem="usb">
 		<log>Usb device connected</log>
 	</uevent>
 
-	<uevent name="Jing-Mold.*">
+	<uevent name="Jing-Mold.*" subsystem="input">
 		<load mod="input">
 			<on key="42">
 				<log>PLOP</log>
 			</on>
+		</load>
+	</uevent>
+
+	<uevent name="Logitech Logitech Driving Force" subsystem="input" action="add">
+		<load mod="input">
+			<on key="293">
+				<log>            PLOP</log>
+			</on>
+		</load>
+	</uevent>
+
+	<uevent name="01:23:45:67:89:0B" subsystem="input" action="add">
+		<load mod="input" capture="1">
+			<on key="163" value="0"><log>	Chanson suivante</log></on>
+			<on key="164" value="0"><log>	Pause</log></on>
+			<on key="165" value="0"><log>	Chanson précedente</log></on>
 		</load>
 	</uevent>
 </root>

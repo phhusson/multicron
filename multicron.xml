@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <root>
-	<cnproc type="exec" cmdline="nspluginviewer.*">
+	<cnproc type="exec" cmdline="nsplugin.*">
 		<kill signal="9"/>
 	</cnproc>
 
@@ -29,6 +29,10 @@
 	<cnproc type="exec" cmdline=".*ioUrbanTerror.*">
 		<ionice class="realtime"/>
 		<log>ioUrbanTerror launched</log>
+	</cnproc>
+
+	<cnproc type="exec" cmdline="hellanzb.*">
+		<ionice class="idle"/>
 	</cnproc>
 
 	<date hour="19" min="55" sec="00"><cmd>date;mplayer -dumpstream dvb://CANAL+ -dumpfile /tmp/Guignols.ts</cmd></date>

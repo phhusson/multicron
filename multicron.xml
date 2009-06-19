@@ -64,9 +64,28 @@
 
 	<uevent name="01:23:45:67:89:0B" subsystem="input" action="add">
 		<load mod="input" capture="1">
-			<on key="163" value="0"><log>	Chanson suivante</log></on>
-			<on key="164" value="0"><log>	Pause</log></on>
-			<on key="165" value="0"><log>	Chanson précedente</log></on>
+			<on key="163" value="0">
+				<log>	Chanson suivante</log>
+				<cmd>echo pt_step +1 > /home/phh/mplayer-ctrl</cmd>
+			</on>
+			<on key="164" value="0">
+				<log>	Pause</log>
+				<cmd>echo pause > /home/phh/mplayer-ctrl</cmd>
+			</on>
+			<on key="165" value="0">
+				<log>	Chanson précedente</log>
+				<cmd>echo pt_step +1 > /home/phh/mplayer-ctrl</cmd>
+			</on>
+
+			<on key="200" value="0">
+				<log>	Pause</log>
+				<cmd>echo pause > /home/phh/mplayer-ctrl</cmd>
+			</on>
+
+			<on key="201" value="0">
+				<log>	Pause</log>
+				<cmd>echo pause > /home/phh/mplayer-ctrl</cmd>
+			</on>
 		</load>
 	</uevent>
 </root>

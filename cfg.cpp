@@ -200,7 +200,7 @@ void cfgNode::Free() {
 	}
 }
 
-void cfgNode::addAttr(const char *name, const char *value) {
+cfgNode *cfgNode::addAttr(const char *name, const char *value) {
 	int i;
 	for(i=0;attrs[i];++i);
 	printf("Set %s=%s\n", name, value);
@@ -214,4 +214,5 @@ void cfgNode::addAttr(const char *name, const char *value) {
 		attrs[i+1]=strdup("");
 	attrs[i+2]=NULL;
 	attrs[i+3]=NULL;
+	return this;
 }

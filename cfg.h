@@ -10,7 +10,7 @@ class cfgNode {
 		~cfgNode();//Warning: you'll maybe need Free() also
 		void operator=(const cfgNode &cfg);
 
-		void addAttr(const char *name, const char *value);
+		cfgNode *addAttr(const char *name, const char *value);//Return this
 
 		const char *operator[](const char*) const;
 

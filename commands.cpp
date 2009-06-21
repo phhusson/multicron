@@ -148,10 +148,22 @@ void loadCall(const cfgNode& arg, const context_t& context) {
 	free(str);
 	conf.addAttr("file", context.file);
 	conf.addAttr("devpath", context.devpath);
-	if(strcmp(arg["mod"], "input")==0) {
-		MainLoop::AddEM(new InputEvent(conf));
-	} else
-		throw "Unsupported load module";
+	if(arg["mod"]) {
+		if(strcmp(arg["mod"], "input")==0) {
+			MainLoop::AddEM(new InputEvent(conf));
+		} else
+			throw "Unsupported load module";
+	} else if(arg["lib"]) {
+		void *hdl;
+		dlerror();//Discard current dl errors
+		hdl=dlopen(arg["lib"], RTLD_NOW|RTLD_LOCAL);
+		EventManager *(*loader)( cfgNode arg);
+		loader=dlsym(hdl, "getSelf");
+		if(!loader)
+			fprintf(stderr, "dlsym said: %s\n", dlerror());
+		MainLoop::AddEM(loader(arg));
+	} else {
+		throw "Hum, don't want to load a module nor a library ? What's wrong with you ?";
 }
 
 void Cmds::Update() {

@@ -22,8 +22,7 @@
 
 #define ALLOC_STEP 5
 #define NAME "inotify"
-InotifyEvent::InotifyEvent(cfgNode conf)
-	: cfg(conf) {
+InotifyEvent::InotifyEvent() {
 	rfds=(int*)malloc(sizeof(int)*2);
 #ifdef BSD
 	rfds[0]=kqueue();
@@ -39,11 +38,9 @@ InotifyEvent::InotifyEvent(cfgNode conf)
 	name=strdup(NAME);
 	inotify_files=(inotify_file*)malloc(sizeof(inotify_file)*ALLOC_STEP);
 	memset(inotify_files, 0, sizeof(inotify_file)*ALLOC_STEP);
+	cfg=NULL;
 	n=0;
-}
-
-InotifyEvent::InotifyEvent() {
-	throw "This shouldn't happen.";
+	n_cfg=0;
 }
 
 InotifyEvent::~InotifyEvent() {
@@ -58,69 +55,87 @@ InotifyEvent::~InotifyEvent() {
 	}
 	if(name)
 		free(name);
+	if(cfg) {
+		for(i=0;i<n_cfg;++i)
+			if(cfg[i])
+				delete cfg[i];
+		free(cfg);
+	}
 }
 
-void InotifyEvent::RefreshConfig() {
+void InotifyEvent::AddCfg(cfgNode conf) {
 	int inotify=rfds[0];
-	cfgNode config(cfg);
-	while(!!config) {
-		if(strcmp(config.getName(), NAME)!=0) {
-			++config;
-			continue;
-		}
-		if(!config["folder"])
-			throw "Inotify need to know in which folder to wait";
-		char *file=strdup(config["folder"]);
-		if( file[strlen(file)-1]=='/')
-			file[strlen(file)-1]=0;
-		int ret;
-		struct stat buf;
-		if(lstat(file, &buf)) {
-			free(file);
-			return;
-		}
-		if(!S_ISDIR(buf.st_mode)) {
-			//Maybe say to the user he is a f***ing noob ?
-			free(file);
-			return;
-		}
-	
-#ifdef BSD
-		int f;
-		f=open(file, O_RDONLY);
-		struct kevent change;
-		EV_SET(&change, f, EVFILT_VNODE,
-				//ONESHOT or not ?
-			EV_ADD | EV_ENABLE | EV_ONESHOT,
-			NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB,
-			0, (void*)n);
-		if(kevent(rfds[0], &change, 1, NULL, 0, 0)<0) {
-			perror("kevent");
-			return;
-		}
-#else
-		ret=inotify_add_watch(inotify, file, IN_CREATE|IN_CLOSE_WRITE|IN_MOVED_TO|IN_DELETE|IN_MOVED_FROM);
-		if(ret==-1) {
-			printf("%s\n", file);
-			free(file);
-			perror("Mise en place de la surveillance du fichier");
-			exit(0);
-		}
-#endif
-		++n;
-		if((n%ALLOC_STEP)==0)
-			inotify_files=(inotify_file*)realloc(inotify_files, (ret+ALLOC_STEP)*sizeof(char*));
-#ifdef BSD
-		inotify_files[n-1].fd=f;
-		inotify_files[n-1].wd=f;
-		inotify_files[n-1].filename=file;
-		time(&(inotify_files[n-1].last));//Start watching from now.
-#else
-		inotify_files[n-1].wd=ret;
-		inotify_files[n-1].filename=file;
-#endif
+	cfgNode config(conf);
+	if(!conf)
+		throw "Want to add a null config";
+	if(strcmp(config.getName(), NAME)!=0)
+		throw "Got a non inotify-node in inotify config";
+
+	int i;
+	//Is there place before the end?
+	for(i=0;cfg && cfg[i];++i);
+	if(i>=(n_cfg)) {
+		//No ? Ok then make some
+		cfg=(cfgNode**)realloc(cfg, (n_cfg+2)*sizeof(cfgNode*));
+		cfg[n_cfg+1]=NULL;
+		cfg[n_cfg]=new cfgNode(conf);
+		++n_cfg;
+	} else {
+		//Yes ? then use it.
+		cfg[i]=new cfgNode(conf);
+	}
+
+	if(!config["folder"])
+		throw "Inotify need to know in which folder to wait";
+	char *file=strdup(config["folder"]);
+	if( file[strlen(file)-1]=='/')
+		file[strlen(file)-1]=0;
+	int ret;
+	struct stat buf;
+	if(lstat(file, &buf)) {
+		free(file);
 		return;
 	}
+	if(!S_ISDIR(buf.st_mode)) {
+		//Maybe say to the user he is a f***ing noob ?
+		free(file);
+		return;
+	}
+
+#ifdef BSD
+	int f;
+	f=open(file, O_RDONLY);
+	struct kevent change;
+	EV_SET(&change, f, EVFILT_VNODE,
+			//ONESHOT or not ?
+		EV_ADD | EV_ENABLE | EV_ONESHOT,
+		NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE | NOTE_ATTRIB,
+		0, (void*)n);
+	if(kevent(rfds[0], &change, 1, NULL, 0, 0)<0) {
+		perror("kevent");
+		return;
+	}
+#else
+	ret=inotify_add_watch(inotify, file, IN_CREATE|IN_CLOSE_WRITE|IN_MOVED_TO|IN_DELETE|IN_MOVED_FROM);
+	if(ret==-1) {
+		printf("%s\n", file);
+		free(file);
+		perror("Mise en place de la surveillance du fichier");
+		exit(0);
+	}
+#endif
+	++n;
+	if((n%ALLOC_STEP)==0)
+		inotify_files=(inotify_file*)realloc(inotify_files, (ret+ALLOC_STEP)*sizeof(char*));
+#ifdef BSD
+	inotify_files[n-1].fd=f;
+	inotify_files[n-1].wd=f;
+	inotify_files[n-1].filename=file;
+	time(&(inotify_files[n-1].last));//Start watching from now.
+#else
+	inotify_files[n-1].wd=ret;
+	inotify_files[n-1].filename=file;
+#endif
 }
 
 #ifdef BSD
@@ -220,13 +235,12 @@ void InotifyEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		}
 		asprintf(&path, "%s/%s", inotify_files[j].filename, name);
 
-		cfgNode node(cfg);
 		char *filename=inotify_files[j].filename;
-		while(!!node) {
-			if(strcmp(node.getName(), "inotify")!=0) {
-				++node;
-				continue;
-			}
+		int i;
+		for(i=0;i<n_cfg;++i) {
+			cfgNode node=cfg[i][0];
+			if(strcmp(node.getName(), "inotify")!=0) 
+				throw "Got a non inotify-node in our config nodes !";
 			char *folder=strdup(node["folder"]);
 			if(folder[strlen(folder)-1]=='/')
 				folder[strlen(folder)-1]=0;
@@ -241,10 +255,15 @@ void InotifyEvent::Callback(int fd, EventManager::ETYPE event_type) {
 					Cmds::Call(node, ctx);
 			}
 			free(folder);
-			++node;
 		}
 	}
 	if(path)
 		free(path);
 }
 #endif
+
+extern "C" {
+	void registerSelf() {
+		MainLoop::AddEM(new InotifyEvent);
+	};
+};

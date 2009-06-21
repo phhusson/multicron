@@ -2,7 +2,6 @@
 #include "cfg.h"
 #include "multicron.h"
 #include "commands.h"
-#include "input.h"
 #include <string>
 #include <string.h>
 #include <unistd.h>
@@ -149,21 +148,13 @@ void loadCall(const cfgNode& arg, const context_t& context) {
 	conf.addAttr("file", context.file);
 	conf.addAttr("devpath", context.devpath);
 	if(arg["mod"]) {
-		if(strcmp(arg["mod"], "input")==0) {
-			MainLoop::AddEM(new InputEvent(conf));
-		} else
-			throw "Unsupported load module";
-	} else if(arg["lib"]) {
-		void *hdl;
-		dlerror();//Discard current dl errors
-		hdl=dlopen(arg["lib"], RTLD_NOW|RTLD_LOCAL);
-		EventManager *(*loader)( cfgNode arg);
-		loader=dlsym(hdl, "getSelf");
-		if(!loader)
-			fprintf(stderr, "dlsym said: %s\n", dlerror());
-		MainLoop::AddEM(loader(arg));
-	} else {
-		throw "Hum, don't want to load a module nor a library ? What's wrong with you ?";
+		EventManager *ev=MainLoop::GetEM(arg["mod"]);
+		if(!ev)
+			throw "Unsupported module";
+		else
+			ev->AddCfg(arg);
+	} else
+		throw "Hum, don't want to load any module ? What's wrong with you ?";
 }
 
 void Cmds::Update() {
@@ -187,7 +178,7 @@ void Cmds::Update() {
 	cmds[4].callback=reloadCall;
 	cmds[5].name=strdup("log");
 	cmds[5].callback=logCall;
-	cmds[6].name=strdup("load");
+	cmds[6].name=strdup("load");//Has to be renamed
 	cmds[6].callback=loadCall;
 }
 

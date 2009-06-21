@@ -13,7 +13,8 @@
 
 #include <linux/netlink.h>
 
-#include <string>
+#include <assert.h>
+#include <ctype.h>
 
 #include "cfg.h"
 #include "multicron.h"
@@ -58,7 +59,6 @@ static int ueventInit() {
 void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	if(event_type==EventManager::TIMEOUT)
 		return;
-	cfgNode config(cfg);
 	(void)event_type;
 	char buffer[HOTPLUG_BUFFER_SIZE + OBJECT_SIZE];
 	int buflen;
@@ -137,12 +137,13 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		++tot;
 	}
 
-	cfgNode node=config;
-	while(!!node) {
-		if(strcmp(node.getName(), name)!=0) {
-			++node;
+	cfgNode node;
+	int i;
+	for(i=0;i<n_cfg;++i) {
+		if(!cfg[i])
 			continue;
-		}
+		node=cfg[i][0];
+		assert(strcmp(node.getName(), name)==0);
 		if(node["subsystem"])
 			if(!regexp_match(node["subsystem"], ev->subsys)) {
 				++node;
@@ -175,7 +176,7 @@ void UEvent::Callback(int fd, EventManager::ETYPE event_type) {
 	delete ev;
 }
 
-UEvent::UEvent(cfgNode conf) : cfg(conf) {
+UEvent::UEvent() {
 	rfds=(int*)malloc(sizeof(int)*2);
 	rfds[0]=ueventInit();
 	rfds[1]=-1;
@@ -183,6 +184,8 @@ UEvent::UEvent(cfgNode conf) : cfg(conf) {
 	efds=NULL;
 
 	name=strdup("uevent");
+	cfg=NULL;
+	n_cfg=0;
 }
 
 UEvent::~UEvent() {
@@ -194,4 +197,17 @@ UEvent::~UEvent() {
 		free(name);
 		name=NULL;
 	}
+	if(cfg) {
+		int i;
+		for(i=0;i<n_cfg;++i)
+			if(cfg[i])
+				delete cfg[i];
+		free(cfg);
+	}
 }
+
+extern "C" {
+	void registerSelf() {
+		MainLoop::AddEM(new UEvent);
+	}
+};

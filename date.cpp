@@ -12,13 +12,16 @@
 
 #define NAME "date"
 
-DateEvent::DateEvent(cfgNode conf) : cfg(conf) {
+DateEvent::DateEvent() {
 	rfds=NULL;wfds=NULL;efds=NULL;
 	name=strdup(NAME);
 	tasks=NULL;
+	n=0;
 }
 
 DateEvent::~DateEvent() {
+	if(name)
+		free(name);
 	if(!tasks)
 		return;
 
@@ -27,8 +30,6 @@ DateEvent::~DateEvent() {
 		delete tasks[i];
 	free(tasks);
 	tasks=NULL;
-	if(name)
-		free(name);
 }
 
 void DateEvent::Callback(int fd, ETYPE event_type) {
@@ -56,26 +57,13 @@ void DateEvent::Callback(int fd, ETYPE event_type) {
 	}
 }
 
-void DateEvent::RefreshConfig() {
-	if(tasks) {
-		int i;
-		for(i=0;tasks[i];++i)
-			delete tasks[i];
-		free(tasks);
-	}
-	tasks=NULL;
-	int n=0;
-	cfgNode config(cfg);
-	while(!!config) {
-		if(strcmp(config.getName(), NAME)!=0) {
-			++config;
-			continue;
-		}
-		tasks=(DateTask**)realloc(tasks, sizeof(DateTask*)*(n+2));
-		tasks[n]=new DateTask(config);
-		++n;
-		++config;
-	}
+void DateEvent::AddCfg(cfgNode conf) {
+	cfgNode config(conf);
+	if(strcmp(config.getName(), NAME)!=0) 
+		throw "date got non-date config node";
+	tasks=(DateTask**)realloc(tasks, sizeof(DateTask*)*(n+2));
+	tasks[n]=new DateTask(config);
+	++n;
 	tasks[n]=NULL;
 }
 
@@ -202,3 +190,9 @@ void Time::Display() {
 	printf("HH:MM:SS=%02d:%02d:%02d\n", (t%86400)/3600, (t%3600)/60, t%60);
 }
 #endif
+
+extern "C" {
+	void registerSelf() {
+		MainLoop::AddEM(new DateEvent);
+	}
+};

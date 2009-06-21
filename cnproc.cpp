@@ -89,7 +89,7 @@ enum {
 #define INTR_SIG SIGINT
 sigjmp_buf g_jmp;
 
-static void handle_msg (struct cn_msg *cn_hdr, cfgNode config)
+void CNProcEvent::handle_msg (struct cn_msg *cn_hdr)
 {
 	char cmdline[1024], fname1[1024], fname2[1024], file[1024];
 	int cmdline_sz, fd, i;
@@ -141,12 +141,11 @@ static void handle_msg (struct cn_msg *cn_hdr, cfgNode config)
 	if(ev->what!=PROC_EVENT_EXEC)
 		return;
 	
-	cfgNode node(config);
-	while(!!node) {
-		if(strcmp(node.getName(), "cnproc")!=0) {
-			++node;
-			continue;
-		}
+	cfgNode node;
+	for(i=0;i<n_cfg;++i) {
+		node=cfg[i][0];
+		if(strcmp(node.getName(), "cnproc")!=0)
+			throw "Got a non cnproc-node in our config nodes!";
 		const char *afile=node["file"];
 		if(afile)
 			if(!regexp_match(afile, file)) {
@@ -283,14 +282,14 @@ void CNProcEvent::Callback(int fd, EventManager::ETYPE event_type) {
 		if ((nlh->nlmsg_type == NLMSG_ERROR) ||
 		    (nlh->nlmsg_type == NLMSG_OVERRUN))
 			break;
-		handle_msg(cn_hdr, cfg);
+		handle_msg(cn_hdr);
 		if (nlh->nlmsg_type == NLMSG_DONE)
 			break;
 		nlh = NLMSG_NEXT(nlh, recv_len);
 	}
 }
 
-CNProcEvent::CNProcEvent(cfgNode conf) : cfg(conf) {
+CNProcEvent::CNProcEvent() {
 	rfds=(int*)malloc(sizeof(int)*2);
 	rfds[0]=cnprocInit();
 	rfds[1]=-1;
@@ -298,6 +297,8 @@ CNProcEvent::CNProcEvent(cfgNode conf) : cfg(conf) {
 	efds=NULL;
 
 	name=strdup("cnproc");
+	n_cfg=0;
+	cfg=NULL;
 }
 
 CNProcEvent::~CNProcEvent() {
@@ -306,4 +307,17 @@ CNProcEvent::~CNProcEvent() {
 	}
 	if(name)
 		free(name);
+	int i;
+	if(cfg) {
+		for(i=0;i<n_cfg;++i)
+			if(cfg[i])
+				delete cfg[i];
+		free(cfg);
+	}
 }
+
+extern "C" {
+	void registerSelf() {
+		MainLoop::AddEM(new CNProcEvent);
+	}
+};

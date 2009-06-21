@@ -1,5 +1,11 @@
 <?xml version="1.0"?>
 <root>
+	<load>inotify</load>
+	<load>date</load>
+	<load>cnproc</load>
+	<load>inotify</load>
+	<load>uevent</load>
+
 	<cnproc type="exec" cmdline="nsplugin.*">
 		<kill signal="9"/>
 	</cnproc>

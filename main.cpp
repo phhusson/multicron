@@ -2,14 +2,16 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/wait.h>
+#include <dlfcn.h>
 #include "cfg.h"
 #include "multicron.h"
+/*
 #include "cnproc.h"
 #include "inotify.h"
 #include "uevent.h"
 #include "date.h"
-/*
 #include <iostream>
 #include <string>
 */
@@ -67,9 +69,6 @@ int main(int argc, char **argv) {
 }
 
 void EventManager::Callback(int fd, ETYPE event_type) {
-}
-
-void EventManager::RefreshConfig() {
 }
 
 struct timeval EventManager::NextTimeout() {
@@ -164,6 +163,7 @@ void MainLoop::Reload() {
 #endif
 #endif
 
+#if 0
 	AddEM(new InotifyEvent(self->root));
 	AddEM(new DateEvent(self->root));
 #ifndef BSD
@@ -174,6 +174,43 @@ void MainLoop::Reload() {
 	for(i=0;i<(self->n);++i)
 		if(self->evs[i])
 			self->evs[i]->RefreshConfig();
+#endif
+	cfgNode node;
+	for(node=self->root ; !!node ; ++node) {
+		if(strcmp(node.getName(), "load")==0) {
+
+			//Haven't found this EM in already loaded ones
+			//Let's try to find it somethere else.
+			struct stat stat_buf;
+			char *path;
+			asprintf(&path, "./%s.so", node());
+			if(stat(path, &stat_buf)!=0) {
+				fprintf(stderr, "Module %s not found\n", node());
+				free(path);
+				continue;
+			}
+
+			void *hdl;
+			dlerror();//Discard current dl errors
+			hdl=dlopen(path, RTLD_NOW|RTLD_LOCAL);
+			free(path);
+			void (*loader)();
+			loader=(typeof(loader))dlsym(hdl, "registerSelf");
+			if(!loader) {
+				fprintf(stderr, "dlsym said: %s\n", dlerror());
+				continue;
+			}
+			loader();
+		} else {
+			EventManager *ev;
+			ev=GetEM(node.getName());
+			if(ev) 
+				ev->AddCfg(node);
+			else
+				fprintf(stderr, "%s not managed\n", node.getName());
+		}
+
+	}
 }
 
 void MainLoop::AddEM(EventManager *ev) {
@@ -195,6 +232,35 @@ void MainLoop::AddEM(EventManager *ev) {
 	}
 }
 
+void EventManager::AddCfg(cfgNode conf) {
+	if(!conf)
+		throw "Want to add a null config";
+	int i;
+	//Is there place before the end?
+	for(i=0;cfg && cfg[i];++i);
+	if(i>=(n_cfg)) {
+		//No ? Ok then make some
+		cfg=(cfgNode**)realloc(cfg, (n_cfg+2)*sizeof(cfgNode*));
+		cfg[n_cfg+1]=NULL;
+		cfg[n_cfg]=new cfgNode(conf);
+		++n_cfg;
+	} else {
+		//Yes ? then use it.
+		cfg[i]=new cfgNode(conf);
+	}
+}
+
+EventManager *MainLoop::GetEM(const char *name) {
+	MainLoop *self=Get();
+	int i;
+	for(i=0;i<self->n;++i) {
+		if(self->evs[i] && self->evs[i]->name)
+			if(strcmp(name, self->evs[i]->name)==0)
+				return self->evs[i];
+	}
+	return NULL;
+}
+
 void MainLoop::DelEM(EventManager *ev) {
 	if(ev==NULL)
 		throw "Want to delete a null event manager";
@@ -207,7 +273,7 @@ void MainLoop::DelEM(EventManager *ev) {
 			return;
 		}
 	}
-	throw "Couldn't match wanteed Event";
+	throw "Couldn't match wanted Event";
 }
 
 void MainLoop::AddFDs(fd_set &fds, EventManager::ETYPE event_type,  int &max) {

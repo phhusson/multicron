@@ -12,14 +12,12 @@ typedef struct {
 
 class InotifyEvent : public EventManager {
 	public:
-		InotifyEvent(cfgNode cfg);
+		InotifyEvent();
 		void Callback(int fd, ETYPE event_type);
-		void RefreshConfig();
+		void AddCfg(cfgNode cfg);
 		~InotifyEvent();
 	private:
-		InotifyEvent();
 		inotify_file *inotify_files;
 		int n;
-		cfgNode cfg;
 };
 

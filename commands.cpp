@@ -152,7 +152,7 @@ void loadCall(const cfgNode& arg, const context_t& context) {
 		if(!ev)
 			throw "Unsupported module";
 		else
-			ev->AddCfg(arg);
+			ev->AddCfg(conf);
 	} else
 		throw "Hum, don't want to load any module ? What's wrong with you ?";
 }

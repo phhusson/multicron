@@ -3,10 +3,14 @@
 	<load>inotify</load>
 	<load>date</load>
 	<load>cnproc</load>
-	<load>inotify</load>
+	<load>input</load>
 	<load>uevent</load>
 
-	<cnproc type="exec" cmdline="nsplugin.*">
+	<cnproc type="exec" cmdline=".*nsplugin.*">
+		<kill signal="9"/>
+	</cnproc>
+
+	<cnproc type="exec" cmdline="knotify4.*">
 		<kill signal="9"/>
 	</cnproc>
 
@@ -94,4 +98,5 @@
 			</on>
 		</load>
 	</uevent>
+
 </root>

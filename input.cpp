@@ -13,11 +13,11 @@ void InputEvent::CheckForEvent() {
 	if(rfds)
 		return;
 	char *path;
-	if(!cfg["devpath"]) {
+	if(!config["devpath"]) {
 		MainLoop::DelEM(this);
 		return;
 	}
-	asprintf(&path, "/sys/%s", cfg["devpath"]);
+	asprintf(&path, "/sys/%s", config["devpath"]);
 	DIR *dir=opendir(path);
 	free(path);
 	path=NULL;
@@ -38,7 +38,7 @@ void InputEvent::CheckForEvent() {
 				rfds=(int*)malloc(sizeof(int)*2);
 				rfds[0]=fd;
 				rfds[1]=-1;
-				if(cfg["capture"])
+				if(config["capture"])
 					ioctl(fd, EVIOCGRAB, 1);
 			}
 			free(path);
@@ -49,21 +49,27 @@ void InputEvent::CheckForEvent() {
 	closedir(dir);
 }
 
-InputEvent::InputEvent(cfgNode conf) : cfg(conf) {
+InputEvent::InputEvent(cfgNode conf) : config(conf) {
 	printf("Called input creator!\n");
 	rfds=NULL;
 	wfds=NULL;
 	efds=NULL;
-	name=strdup("input");
-	if(cfg["devpath"]==NULL) {
+	cfg=NULL;
+	n_cfg=0;
+	name=NULL;//Setting name as NULL disable config keyword searching
+	todelete=false;
+	if(config["devpath"]==NULL) {
 		printf("Got null devpath, delete myself\n");
-		MainLoop::DelEM(this);
+		todelete=true;
 	}
-	CheckForEvent();
 }
 
 
 void InputEvent::Callback(int fd, ETYPE event_type) {
+	if(todelete) {
+		MainLoop::DelEM(this);
+		return;
+	}
 	if(!rfds) {
 		CheckForEvent();
 		return;
@@ -80,10 +86,13 @@ void InputEvent::Callback(int fd, ETYPE event_type) {
 		MainLoop::DelEM(this);
 		return;
 	}
+#ifdef DEBUG
 	if(ev.type==EV_KEY)
 		printf("\tcode=%d\n", ev.code);
-	cfgNode conf(cfg.getChild());
-	while(!!conf) {
+#endif
+	cfgNode conf=config.getChild();
+	int i;
+	for(;!!conf;++conf) {
 		if(strcmp(conf.getName(), "on")!=0)
 			throw "Only 'on' nodes allowed in input configuration";
 		if(!conf["key"]) {
@@ -110,12 +119,7 @@ void InputEvent::Callback(int fd, ETYPE event_type) {
 			//Anything to put in ctx?
 			Cmds::Call(conf, ctx);
 		}
-		++conf;
 	}
-}
-
-void InputEvent::RefreshConfig() {
-	printf("Called InputEvent Refreshconfig ?!?\n");
 }
 
 struct timeval InputEvent::NextTimeout() {
@@ -131,5 +135,32 @@ struct timeval InputEvent::NextTimeout() {
 }
 
 InputEvent::~InputEvent() {
-	printf("Called InputEvent destructor\n");
+	if(cfg) {
+		int i;
+		for(i=0;i<n_cfg;++i)
+			if(cfg[i])
+				delete cfg[i];
+	}
 }
+
+void InputGlobalEvent::AddCfg(cfgNode cfg) {
+	MainLoop::AddEM(new InputEvent(cfg));
+}
+
+InputGlobalEvent::InputGlobalEvent() {
+	name=strdup("input");
+	rfds=NULL;
+	wfds=NULL;
+	efds=NULL;
+}
+
+InputGlobalEvent::~InputGlobalEvent() {
+	free(name);
+	name=NULL;
+}
+
+extern "C" {
+	void registerSelf() {
+		MainLoop::AddEM(new InputGlobalEvent);
+	}
+};

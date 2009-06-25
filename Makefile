@@ -7,7 +7,7 @@ UEVENT=uevent.o uevent/power.o uevent/usb.o uevent/input.o
 #OBJECTS=cnproc.o ezxml.o cfg.o main.o inotify.o input.o commands.o regexp.o date.o $(UEVENT)
 OBJECTS=ezxml.o cfg.o main.o commands.o regexp.o
 
-MODULES=date.so inotify.so cnproc.so uevent.so
+MODULES=date.so inotify.so cnproc.so uevent.so input.so
 
 multicron: $(OBJECTS)
 	g++ $(OBJECTS) -o multicron -Wall -g `pcre-config --libs-posix` -ldl -rdynamic

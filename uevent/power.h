@@ -6,6 +6,7 @@ namespace UEvents {
 			~Power();
 			void SetVar(const char *name, const char *value);
 			void Display();
+			bool Match(cfgNode cfg);
 		private:
 			//Informations comes from linux 2.6.30-rc6 drivers/power/power_supply_sysfs.c
 			char *power_name;//POWER_supply_name

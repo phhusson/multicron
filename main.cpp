@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
 		}
 	} catch(const char *e) {
-		printf("%s\n", e);
+		printf("Thrown %s. Exiting.\n", e);
 	} catch(...) {
 		printf("Got unknown exception!\n");
 	}
@@ -178,29 +178,7 @@ void MainLoop::Reload() {
 	cfgNode node;
 	for(node=self->root ; !!node ; ++node) {
 		if(strcmp(node.getName(), "load")==0) {
-
-			//Haven't found this EM in already loaded ones
-			//Let's try to find it somethere else.
-			struct stat stat_buf;
-			char *path;
-			asprintf(&path, "./%s.so", node());
-			if(stat(path, &stat_buf)!=0) {
-				fprintf(stderr, "Module %s not found\n", node());
-				free(path);
-				continue;
-			}
-
-			void *hdl;
-			dlerror();//Discard current dl errors
-			hdl=dlopen(path, RTLD_NOW|RTLD_LOCAL);
-			free(path);
-			void (*loader)();
-			loader=(typeof(loader))dlsym(hdl, "registerSelf");
-			if(!loader) {
-				fprintf(stderr, "dlsym said: %s\n", dlerror());
-				continue;
-			}
-			loader();
+			SearchEM(node());
 		} else {
 			EventManager *ev;
 			ev=GetEM(node.getName());
@@ -259,6 +237,39 @@ EventManager *MainLoop::GetEM(const char *name) {
 				return self->evs[i];
 	}
 	return NULL;
+}
+
+bool MainLoop::SearchEM(const char *name) {
+	if(GetEM(name))
+		return true;
+	//Haven't found this EM in already loaded ones
+	//Let's try to find it somethere else.
+	struct stat stat_buf;
+	char *path;
+	asprintf(&path, "./%s.so", name);
+	if(stat(path, &stat_buf)!=0) {
+		fprintf(stderr, "Module %s not found\n", name);
+		free(path);
+		return false;
+	}
+
+	void *hdl;
+	dlerror();//Discard current dl errors
+	hdl=dlopen(path, RTLD_NOW|RTLD_LOCAL);
+	free(path);
+	if(!hdl) {
+		fprintf(stderr, "dlopen returned %s\n", dlerror());
+		return false;
+	}
+	void (*loader)();
+	loader=(typeof(loader))dlsym(hdl, "registerSelf");
+	if(!loader) {
+		fprintf(stderr, "dlsym said: %s\n", dlerror());
+		fprintf(stderr, "\ton %s\n", name);
+		return false;
+	}
+	loader();
+	return true;
 }
 
 void MainLoop::DelEM(EventManager *ev) {

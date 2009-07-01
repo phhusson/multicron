@@ -6,7 +6,7 @@
 	<load>inotify</load>
 	<load>uevent</load>
 
-	<cnproc type="exec" cmdline="nsplugin.*">
+	<cnproc type="exec" cmdline=".*nsplugin.*">
 		<kill signal="9"/>
 	</cnproc>
 

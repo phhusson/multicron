@@ -30,13 +30,13 @@ class DateTask {
 
 class DateEvent : public EventManager {
 	public:
-		DateEvent(cfgNode conf);
+		DateEvent();
 		void Callback(int fd, ETYPE event_type);
 		struct timeval NextTimeout();
-		void RefreshConfig();
+		void AddCfg(cfgNode conf);
 		~DateEvent();
 	private:
-		DateEvent() { throw "No simple constructor allowed"; };
 		DateTask **tasks;
-		cfgNode cfg;
+		cfgNode *cfg;
+		int n;
 };

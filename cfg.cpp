@@ -105,6 +105,8 @@ cfgNode::cfgNode(int fd) {
 
 const char *cfgNode::operator[](const char *name) const {
 	int i=0;
+	if(!attrs)
+		return NULL;
 	while(attrs[2*i]) {
 		if(strcmp(attrs[2*i], name)==0)
 			return attrs[2*i+1];

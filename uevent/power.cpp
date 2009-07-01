@@ -121,3 +121,18 @@ void UEvents::Power::SetVar(const char *name, const char *value) {
 void UEvents::Power::Display() {
 	printf("Battery at %f%%\n", (100.0*charge_now)/(1.0*charge_full));
 }
+
+bool UEvents::Power::Match(cfgNode cfg) {
+	if(cfg["type"]) {
+		if(strcmp(cfg["type"], "battery")==0) {
+			if(type!=BATTERY)
+				return false;
+		} else if(strcmp(cfg["type"], "ac")==0) {
+			if(type!=MAINS)
+				return false;
+		} else
+			return false;
+	}
+	return true;
+
+}

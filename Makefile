@@ -1,5 +1,6 @@
-CFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix`
-CXXFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix`
+#DEBUG=-DDEBUG
+CFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix` $(DEBUG)
+CXXFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix` $(DEBUG)
 
 all: multicron
 
@@ -13,12 +14,12 @@ multicron: $(OBJECTS)
 	g++ $(OBJECTS) -o multicron -Wall -g `pcre-config --libs-posix` -ldl -rdynamic
 
 uevent.so: $(UEVENT)
-	gcc $(UEVENT) -shared -o $@  -rdynamic -g
+	gcc $(UEVENT) -shared -o $@  -rdynamic -g $(CXFLAGS)
 
 %.so: %.cpp
-	gcc $< -shared -o $@  -rdynamic -g
+	gcc $< -shared -o $@  -rdynamic -g $(CXXFLAGS)
 
 all: multicron $(MODULES)
 
 clean:
-	rm -f multicron $(OBJECTS)
+	rm -f multicron $(OBJECTS) $(MODULES)

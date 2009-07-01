@@ -87,33 +87,25 @@ void InputEvent::Callback(int fd, ETYPE event_type) {
 		return;
 	}
 #ifdef DEBUG
-	if(ev.type==EV_KEY)
-		printf("\tcode=%d\n", ev.code);
+	printf("type=%d,code=%d,value=%d\n", ev.type, ev.code, ev.value);
 #endif
 	cfgNode conf=config.getChild();
-	int i;
 	for(;!!conf;++conf) {
 		if(strcmp(conf.getName(), "on")!=0)
 			throw "Only 'on' nodes allowed in input configuration";
 		if(!conf["key"]) {
 			printf("Non-key input-event not supported atm\n");
-			++conf;
 			continue;
 		}
 		if(conf["key"]) {
-			if(ev.type!=EV_KEY) {
-				++conf;
+			if(ev.type!=EV_KEY)
 				continue;
-			}
-			if(ev.code!=atoi(conf["key"])) {
-				++conf;
+			if(ev.code!=atoi(conf["key"]))
 				continue;
-			}
+			
 			if(conf["value"])
-				if(ev.value!=atoi(conf["value"])) {
-					++conf;
+				if(ev.value!=atoi(conf["value"]))
 					continue;
-				}
 			struct context ctx;
 			bzero(&ctx, sizeof(ctx));
 			//Anything to put in ctx?

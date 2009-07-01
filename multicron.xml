@@ -98,5 +98,28 @@
 			</on>
 		</load>
 	</uevent>
+	<input capture="1" devpath="/devices/platform/i8042/serio0/input/input0/">
+		<on key="149" value="0">
+			<log>Monitor key pressed</log>
+		</on>
+		<on key="148" value="0">
+			<log>Q Menu key pressed</log>
+		</on>
+		<on key="15" value="0">
+			<log>TAB key pressed</log>
+		</on>
+		<on key="1" value="0">
+			<log>ESC key pressed</log>
+		</on>
+		<on key="104" value="0">
+			<log>Jogdial left</log>
+		</on>
+		<on key="109" value="0">
+			<log>Jogdial right</log>
+		</on>
+		<on key="28" value="0">
+			<log>Jogdial enter</log>
+		</on>
+	</input>
 
 </root>

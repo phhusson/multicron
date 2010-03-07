@@ -88,6 +88,32 @@ void ioniceCall(const cfgNode& arg, const context_t& context) {
 
 void cpuniceCall(const cfgNode& arg, const context_t& context) {
 	printf("cpunice called\n");
+	const char *prio=arg["priority"];
+	int _prio;
+	if(!prio)
+		_prio=19;
+	else
+		_prio=atoi(prio);
+	syscall(SYS_setpriority, PRIO_PROCESS, context.pid, _prio);
+}
+
+void oomCall(const cfgNode& arg, const context_t& context) {
+	printf("oom called\n");
+	const char *val=arg["value"];
+	int _val;
+	if(!val)
+		_val=0;
+	else
+		_val=atoi(val);
+	char *buf;
+	asprintf(&buf, "/proc/%d/oom_adj", context.pid);
+	int fd=open(path, O_WRONLY);
+	free(buf);buf=NULL;
+	asprintf(&buf, "%d\n", _val);
+	write(fd, buf, strlen(buf)+1);
+	close(fd);
+	free(buf);
+	buf=NULL;
 }
 
 void killCall(const cfgNode& arg, const context_t& context) {
@@ -180,5 +206,7 @@ void Cmds::Update() {
 	cmds[5].callback=logCall;
 	cmds[6].name=strdup("load");//Has to be renamed
 	cmds[6].callback=loadCall;
+	cmds[7].name=strdup("oom");
+	cmds[7].callback=oomCall;
 }
 

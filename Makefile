@@ -1,6 +1,8 @@
 #DEBUG=-DDEBUG
 CFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix` $(DEBUG)
 CXXFLAGS=-Wall -fPIC -g `pcre-config --cflags-posix` $(DEBUG)
+CC:=gcc
+CXX:=g++
 
 all: multicron
 
@@ -11,13 +13,13 @@ OBJECTS=ezxml.o cfg.o main.o commands.o regexp.o
 MODULES=date.so inotify.so cnproc.so uevent.so input.so
 
 multicron: $(OBJECTS)
-	g++ $(OBJECTS) -o multicron -Wall -g `pcre-config --libs-posix` -ldl -rdynamic
+	$(CXX) $(OBJECTS) -o multicron -Wall -g `pcre-config --libs-posix` -ldl -rdynamic
 
 uevent.so: $(UEVENT)
-	gcc $(UEVENT) -shared -o $@  -rdynamic -g $(CXFLAGS)
+	$(CC) $(UEVENT) -shared -o $@  -rdynamic -g $(CXFLAGS)
 
 %.so: %.cpp
-	gcc $< -shared -o $@  -rdynamic -g $(CXXFLAGS)
+	$(CC) $< -shared -o $@  -rdynamic -g $(CXXFLAGS)
 
 all: multicron $(MODULES)
 
